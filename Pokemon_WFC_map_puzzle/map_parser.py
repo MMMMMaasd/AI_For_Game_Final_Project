@@ -2,6 +2,7 @@ import struct
 import numpy as np
 
 def prepare_wfc_input(map_path, map_width=None, map_height=None, is_large_map=False):
+    # TANIBO (2.35) is a small map, and Vertania is a large map, so be careful when you set is_large_map! 
     with open(map_path, 'rb') as f:
         # Determine header size
         header_size = 32 if is_large_map else 28
