@@ -32,12 +32,8 @@ def prepare_wfc_input(map_path, map_width=None, map_height=None, is_large_map=Fa
                 movable_ids.add(converted)
                 unique_ids_set.add(converted)
                 return converted
-            elif tile >= 1024:
-                converted = tile - 1024
-                unique_ids_set.add(converted)
-                return converted
-            unique_ids_set.add(tile )
-            return tile  # Normal tiles
+            unique_ids_set.add(tile - 1024)
+            return tile - 1024  # Normal tiles
         
         tile_ids = np.array([convert_tile(t) for t in rom_ids])
         
@@ -52,10 +48,10 @@ def prepare_wfc_input(map_path, map_width=None, map_height=None, is_large_map=Fa
         return wfc_grid, org_rows, org_columns, sorted(movable_ids), sorted(unique_ids_set)
 
 # Usage:
-wfc_array, rows, cols, movable_ids, unique_ids_set = prepare_wfc_input("VERTANIA-WALD (1.0).map", None, None, True)
+#wfc_array, rows, cols, movable_ids, unique_ids_set = prepare_wfc_input("VERTANIA-WALD (1.0).map", None, None, True)
 
-print("\nFinal tile array:")
-print(wfc_array)
-print(f"\nMovable block IDs: {movable_ids}")  # Now shows as plain integers
-print(f"\nMap dimensions: {rows} rows × {cols} columns")
-print(f"\nAll IDS(Unique): {unique_ids_set}")
+#print("\nFinal tile array:")
+#print(wfc_array)
+#print(f"\nMovable block IDs: {movable_ids}")  # Now shows as plain integers
+#print(f"\nMap dimensions: {rows} rows × {cols} columns")
+#print(f"\nAll IDS(Unique): {unique_ids_set}")

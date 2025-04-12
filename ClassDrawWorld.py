@@ -40,13 +40,14 @@ class DrawWorld:
                 elif tile_type in tileSprites:
                     # For forest tiles, draw a grass base layer first
                     tile_image = pygame.Surface((TILESIZE, TILESIZE), pygame.SRCALPHA)
-                    if tile_type >= TILE_FORESTN:
-                        grass_pos = tileSprites[TILE_GRASS]
-                        grass_img = self.spritesheet.subsurface(
-                            pygame.Rect(grass_pos[0], grass_pos[1], TILESIZE, TILESIZE)
-                        )
-                        tile_image.blit(grass_img, (0, 0))
-
+                    
+                   # if tile_type >= TILE_FORESTN:
+                   #     grass_pos = tileSprites[TILE_GRASS]
+                   #     grass_img = self.spritesheet.subsurface(
+                   #         pygame.Rect(grass_pos[0], grass_pos[1], TILESIZE, TILESIZE)
+                   #     )
+                   #     tile_image.blit(grass_img, (0, 0))
+                        
                     pos = tileSprites[tile_type]
                     sprite = self.spritesheet.subsurface(pygame.Rect(pos[0], pos[1], TILESIZE, TILESIZE))
                     tile_image.blit(sprite, (0, 0))
