@@ -102,8 +102,8 @@ TILE_FENCE_MID = 678
 TILE_FENCE_MID = 679
 
 # Defined the size of the WFC generated graph here
-WORLD_X = 20
-WORLD_Y = 20
+WORLD_X = 40
+WORLD_Y = 40
 
 # Spritesheet tile size (original), and upscale factor
 # Pokemon ROM map png is 16 pixel per block
@@ -159,10 +159,11 @@ def assign_tile_sprite(unique_ids_set):
     for name, tile_id in tile_constants.items():
         x = (tile_id % 8) * 16
         y = (tile_id // 8) * 16
-        tileSprites[name] = (x, y)
+        tileSprites[tile_id] = (x, y)
     
     return tileSprites
         
 
 tileWeights = get_tile_weights_from_map(wfc_input_array)
 tileSprites = assign_tile_sprite(unique_ids_set)
+print(tileSprites)

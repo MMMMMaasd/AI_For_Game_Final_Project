@@ -32,8 +32,12 @@ def prepare_wfc_input(map_path, map_width=None, map_height=None, is_large_map=Fa
                 movable_ids.add(converted)
                 unique_ids_set.add(converted)
                 return converted
-            unique_ids_set.add(tile - 1024)
-            return tile - 1024  # Normal tiles
+            elif tile >= 1024:
+                converted = tile - 1024
+                unique_ids_set.add(converted)
+                return converted
+            unique_ids_set.add(tile)
+            return tile # Normal tiles
         
         tile_ids = np.array([convert_tile(t) for t in rom_ids])
         

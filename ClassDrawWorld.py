@@ -22,6 +22,7 @@ class DrawWorld:
                 tile_entropy = self.world.getEntropy(x, y)
                 tile_type = self.world.getType(x, y)
 
+                print(tile_type, tile_entropy)
                 # Tile not collapsed — show entropy
                 if tile_entropy > 0:
                     tile_image = pygame.Surface((TILESIZE, TILESIZE), pygame.SRCALPHA)
