@@ -14,7 +14,7 @@ class DrawWorld:
             (WORLD_X * TILESIZE * SCALETILE, WORLD_Y * TILESIZE * SCALETILE)
         )
 
-    def update(self):
+    """ def update(self):
         lowest_entropy = self.world.getLowestEntropy()
 
         for y in range(WORLD_Y):
@@ -22,7 +22,7 @@ class DrawWorld:
                 tile_entropy = self.world.getEntropy(x, y)
                 tile_type = self.world.getType(x, y)
 
-                # print(tile_type, tile_entropy)
+                print(tile_type, tile_entropy)
                 # Tile not collapsed — show entropy
                 if tile_entropy > 0:
                     tile_image = pygame.Surface((TILESIZE, TILESIZE), pygame.SRCALPHA)
@@ -64,6 +64,54 @@ class DrawWorld:
                     tile_image,
                     (x * TILESIZE * SCALETILE, y * TILESIZE * SCALETILE)
                 )
+ """
+    
+    def update(self, show_solution_path=False, show_entropy=False):
+        lowest_entropy = self.world.getLowestEntropy()
 
+        for y in range(WORLD_Y):
+            for x in range(WORLD_X):
+                tile_entropy = self.world.getEntropy(x, y)
+                tile_type = self.world.getType(x, y)
+
+                tile_image = pygame.Surface((TILESIZE, TILESIZE), pygame.SRCALPHA)
+
+                if tile_entropy > 0:
+                    # Case: Blocker tile during WFC
+                    if self.world.blocker_mask[y][x]:
+                        tile_image.fill((200, 50, 50))  # Red
+                        if show_entropy:
+                            text = str(tile_entropy)
+                            text_surface = self.font0.render(text, True, (255, 255, 255))  # White text
+                            tile_image.blit(text_surface, (3, 1))
+
+                    # Case: Solution path tile during WFC
+                    elif self.world.solution_mask[y][x] and show_solution_path:
+                        tile_image.fill((0, 120, 0))  # Green
+
+                    # Case: Regular background tile
+                    else:
+                        if show_entropy:
+                            color = "green" if tile_entropy == lowest_entropy else "gray"
+                            text = str(tile_entropy)
+                            text_surface = self.font0.render(text, True, color)
+                            tile_image.blit(text_surface, (3, 1))
+                        else:
+                            tile_image.fill((0, 0, 0))  # Black
+
+                # Case: Collapsed tile — draw sprite
+                elif tile_type in tileSprites:
+                    pos = tileSprites[tile_type]
+                    sprite = self.spritesheet.subsurface(pygame.Rect(pos[0], pos[1], TILESIZE, TILESIZE))
+                    tile_image.blit(sprite, (0, 0))
+
+                # Case: Error fallback
+                else:
+                    tile_image.fill((255, 0, 255))  # Magenta
+
+                tile_image = pygame.transform.scale_by(tile_image, (SCALETILE, SCALETILE))
+                self.worldSurface.blit(tile_image, (x * TILESIZE * SCALETILE, y * TILESIZE * SCALETILE))
+
+        
     def draw(self, displaySurface):
         displaySurface.blit(self.worldSurface, (0, 0))

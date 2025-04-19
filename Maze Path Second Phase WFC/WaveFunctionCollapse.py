@@ -24,12 +24,12 @@ if not INTERACTIVE:
         if result == 0:
             done = True
 
-    # print("\nGenerated tile type map:")
+    print("\nGenerated tile type map:")
     for y in range(WORLD_Y):
         row = []
         for x in range(WORLD_X):
             row.append(str(world.getType(x, y)))
-       # print(" ".join(row))
+        print(" ".join(row))
 
 drawWorld.update()
 isRunning = True
