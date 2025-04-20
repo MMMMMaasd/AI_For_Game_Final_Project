@@ -99,7 +99,7 @@ def extract_adjacency_rules(tile_map):
     return adjacency_rules
     
 adjacency_rules = extract_adjacency_rules(wfc_input_array)
-
+    
 def get_tile_weights_from_map(tile_map):
     tile_counts = defaultdict(int)
 
@@ -119,11 +119,12 @@ def assign_tile_sprite(unique_ids_set):
         tileSprites[tile_id] = (x, y)
     
     return tileSprites
-        
+
 
 tileWeights = get_tile_weights_from_map(wfc_input_array)
 tileSprites = assign_tile_sprite(unique_ids_set)
 
+inner_set_tiles = {TILE_LIGHT_DIRT, TILE_BOULDER_SPOT, STONE_TILE, PLAYER_TILE}
 
 floor_set_tiles = {TILE_LIGHT_DIRT}
 
@@ -207,16 +208,9 @@ all_tile_ids = {
 
 for direction in [NORTH, EAST, SOUTH, WEST]:
     adjacency_rules[PLAYER_TILE][direction].update(all_tile_ids)
-    adjacency_rules[TILE_ROCK_WALL_LEFT2][direction].update(all_tile_ids)
-    adjacency_rules[TILE_ROCK_WALL_RIGHT2][direction].update(all_tile_ids)
-    adjacency_rules[TILE_ROCK_WALL_BOTTOM_MID][direction].update(all_tile_ids)
-    adjacency_rules[TILE_ROCK_VERTICAL_MID][direction].update(all_tile_ids)
     for tile_id in all_tile_ids:
         adjacency_rules[tile_id][direction].add(PLAYER_TILE)
-        adjacency_rules[tile_id][direction].add(TILE_ROCK_WALL_RIGHT2)
-        adjacency_rules[tile_id][direction].add(TILE_ROCK_WALL_RIGHT2)
-        adjacency_rules[tile_id][direction].add(TILE_ROCK_WALL_BOTTOM_MID)
-        adjacency_rules[tile_id][direction].add(TILE_ROCK_VERTICAL_MID)
+
         
 
 for box_tile in box_set_tiles:
@@ -235,16 +229,7 @@ for target_tile in target_set_tiles:
         
 for floor_tile in floor_set_tiles:
     for direction in [NORTH, EAST, SOUTH, WEST]:
-        if direction == NORTH:
-            print("yes")
-            adjacency_rules[floor_tile][direction].update(wall_on_floor_top_tiles)
-        elif direction == EAST:
-            adjacency_rules[floor_tile][direction].update(wall_on_floor_right_tiles)
-        elif direction == SOUTH:
-            adjacency_rules[floor_tile][direction].update(wall_on_floor_bottom_tiles)
-        elif direction == WEST:
-            adjacency_rules[floor_tile][direction].update(wall_on_floor_left_tiles)
-        adjacency_rules[floor_tile][direction].update(floor_set_tiles)
+        adjacency_rules[floor_tile][direction].update(wall_set_tiles)
         adjacency_rules[floor_tile][direction].update(box_set_tiles)
         adjacency_rules[floor_tile][direction].update(target_set_tiles)
         
