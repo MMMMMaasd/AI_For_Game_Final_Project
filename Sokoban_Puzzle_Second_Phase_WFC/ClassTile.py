@@ -28,44 +28,6 @@ class Tile:
         self.possibilities = random.choices(self.possibilities, weights=weights, k=1)
         self.entropy = 0
         
-  
-    def _apply_progressive_boundary_rules(self, known_neighbors):
-        left = known_neighbors.get(WEST)
-        right = known_neighbors.get(EAST)
-        top = known_neighbors.get(NORTH)
-        bottom = known_neighbors.get(SOUTH)
-
-        required_tile = None
-        
-        if left in inner_set_tiles:
-            required_tile = TILE_ROCK_WALL_LEFT
-            
-            # Refine if we know top/bottom neighbors
-            if top in inner_set_tiles and bottom not in inner_set_tiles:
-                required_tile = TILE_ROCK_VERTICAL_DIAGONAL_LEFT
-            elif top not in inner_set_tiles and bottom in inner_set_tiles:
-                required_tile = TILE_ROCK_WALL_BOTTOM_LEFT
-
-        elif right in inner_set_tiles:
-            required_tile = TILE_ROCK_WALL_RIGHT2
-            if top in inner_set_tiles and bottom not in inner_set_tiles:
-                required_tile = TILE_ROCK_VERTICAL_DIAGONAL_RIGHT
-            elif top not in inner_set_tiles and bottom in inner_set_tiles:
-                required_tile = TILE_ROCK_WALL_BOTTOM_RIGHT
-
-        elif top in inner_set_tiles:
-            required_tile = TILE_ROCK_VERTICAL_MID
-
-        elif bottom in inner_set_tiles:
-            required_tile = TILE_ROCK_WALL_BOTTOM_MID
-
-        # Apply if we found a rule
-        if required_tile and required_tile in self.possibilities:
-            self.possibilities = [required_tile]
-            self.entropy = 1
-            return True
-            
-        return False
     
     def _is_inner_boundary(self):
         if not hasattr(self, 'world') or not self.world.wall_mask[self.y][self.x]:
