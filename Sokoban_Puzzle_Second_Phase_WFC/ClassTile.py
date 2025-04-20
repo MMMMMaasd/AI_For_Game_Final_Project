@@ -70,9 +70,9 @@ class Tile:
                 return TILE_ROCK_WALL_LEFT
                 
         elif right_is_inner:
-            if top_is_inner and not bottom_is_inner and not right_is_inner:
+            if top_is_inner and not bottom_is_inner and not left_is_inner:
                 return TILE_ROCK_VERTICAL_DIAGONAL_RIGHT
-            elif not top_is_inner and bottom_is_inner and not right_is_inner:
+            elif not top_is_inner and bottom_is_inner and not left_is_inner:
                 return TILE_ROCK_WALL_BOTTOM_RIGHT
             else:
                 return TILE_ROCK_WALL_RIGHT2
