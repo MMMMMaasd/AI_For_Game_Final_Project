@@ -81,11 +81,6 @@ class Tile:
     def constrain(self, neighbourPossibilities, direction):
         reduced = False
 
-        if self.entropy > 1:
-            self.update_collapsed_neighbors()
-            known = self.get_known_neighbors()
-            reduced |= self._apply_progressive_boundary_rules(known)
-
 
         if self.entropy > 0:
             # ✅ First, determine the opposite direction
@@ -117,6 +112,11 @@ class Tile:
                     reduced = True
             print(f"New possibilities: {self.possibilities}")
             self.entropy = len(self.possibilities)
+            
+        if self.entropy > 1:
+            self.update_collapsed_neighbors()
+            known = self.get_known_neighbors()
+            reduced |= self._apply_progressive_boundary_rules(known)
 
         return reduced
 
