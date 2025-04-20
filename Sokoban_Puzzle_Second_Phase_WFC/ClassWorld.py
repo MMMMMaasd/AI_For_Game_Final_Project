@@ -15,6 +15,7 @@ class World:
             tiles = []
             for x in range(sizeX):
                 tile = Tile(x, y)
+                tile.world = self
                 tiles.append(tile)
             self.tileRows.append(tiles)
 
