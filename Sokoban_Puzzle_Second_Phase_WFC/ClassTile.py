@@ -61,7 +61,22 @@ class Tile:
         top_is_inner = top_floor or top_player or top_box or top_target
         bottom_is_inner = bottom_floor or bottom_player or bottom_box or bottom_target
         # Determine boundary type based on adjacent floor tiles
-        if left_is_inner:
+        if left_is_inner and right_is_inner and top_is_inner and bottom_is_inner:
+            self.world.floor_mask[self.y][self.x] = True
+            return TILE_ROCK_EDGE_ANGLED_RIGHT
+        elif left_is_inner and top_is_inner and bottom_is_inner:
+            self.world.floor_mask[self.y][self.x] = True
+            return TILE_ROCK_EDGE_ANGLED_RIGHT
+        elif right_is_inner and top_is_inner and bottom_is_inner:
+            self.world.floor_mask[self.y][self.x] = True
+            return TILE_ROCK_EDGE_ANGLED_RIGHT
+        elif right_is_inner and top_is_inner and left_is_inner:
+            self.world.floor_mask[self.y][self.x] = True
+            return TILE_ROCK_EDGE_ANGLED_RIGHT
+        elif right_is_inner and bottom_is_inner and left_is_inner:
+            self.world.floor_mask[self.y][self.x] = True
+            return TILE_ROCK_EDGE_ANGLED_RIGHT
+        elif left_is_inner:
             if top_is_inner and not bottom_is_inner and not right_is_inner:
                 return TILE_ROCK_VERTICAL_DIAGONAL_LEFT
             elif not top_is_inner and bottom_is_inner and not right_is_inner:

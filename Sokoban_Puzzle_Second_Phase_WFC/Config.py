@@ -11,7 +11,7 @@ wfc_input_array, rows, cols, movable_ids, unique_ids_set = prepare_wfc_input("./
 
 TILE_DIRT = 647
 
-TILE_ROCK_EDGE_ANGLED_RIGHT = 695 # Box/Stone
+TILE_ROCK_EDGE_ANGLED_RIGHT = 695 # Rock
 TILE_ROCK_LEDGE_BOTTOM_LEFT = 702 # Floor Edge
 TILE_ROCK_LEDGE_BOTTOM_RIGHT = 703 # Floor Edge
 TILE_ROCK_LEDGE_BOTTOM_MID = 706 # Floor Edge
@@ -158,7 +158,9 @@ wall_set_tiles = {
     TILE_ROCK_DIVOT_RIGHT,
     
     TILE_ROCK_LEDGE_TOP_LEFT,
-    TILE_ROCK_LEDGE_TOP_RIGHT
+    TILE_ROCK_LEDGE_TOP_RIGHT,
+    
+    TILE_ROCK_EDGE_ANGLED_RIGHT
 }
 
 wall_on_floor_right_tiles = {
