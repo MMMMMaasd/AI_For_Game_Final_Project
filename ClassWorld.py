@@ -172,4 +172,16 @@ class World:
                  break
          print(f"WFC finished in {steps} steps.")
 
+    def reset_region(self, region):
+        """
+        Reset all tiles in `region` back to the full forest domain.
+        region: list of (x, y) tuples.
+        """
+        for x, y in region:
+            tile = self.get_tile(x, y)
+            if tile:
+                tile.possibilities = list(Config.FOREST_DOMAIN)
+                tile.entropy = len(tile.possibilities)
+                tile.is_sokoban_area = False
+
 

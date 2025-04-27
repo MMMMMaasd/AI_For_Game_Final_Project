@@ -7,6 +7,8 @@ from ClassWorld       import World
 from ClassDrawWorld   import DrawWorld
 from MazeGenerator    import generate_maze_and_path
 from SokobanInjector  import inject_sokoban_puzzle
+from agent_before_phase2 import choose_sokoban_region, ensure_sokoban_solvable
+
 
 # --- Pygame setup ---
 pygame.init()
@@ -121,7 +123,7 @@ def run_forest_wfc():
 
 
 def run_sokoban_injection():
-    """Phase 2: inject Sokoban puzzle onto the pre‐carved path."""
+    """Phase 2: pick a chokepoint, inject & test solvability, retry if needed."""
     global sokoban_region, current_phase, wfc_running
 
     if not world or not solution_path:
@@ -129,19 +131,21 @@ def run_sokoban_injection():
         current_phase = "FAILED"
         return
 
-    print("\n--- Phase 2: Injecting Sokoban Puzzle ---")
+    print("\n--- Phase 2: Injecting Sokoban Puzzle via Agent ---")
     current_phase = "SOKO_RUNNING"
     wfc_running = True
 
-    sokoban_region = inject_sokoban_puzzle(world, solution_path, size=7)
-    wfc_running = False
-
-    if sokoban_region:
-        print("Sokoban injection complete!")
+    # let the agent pick a chokepoint, inject, and verify solvability
+    region = choose_sokoban_region(world, solution_path, size=7)
+    if region:
+        sokoban_region = region
+        print("Agent injection succeeded!")
         current_phase = "DONE"
     else:
-        print("ERROR: Sokoban injection failed.")
+        print("ERROR: Agent failed to place a solvable puzzle.")
         current_phase = "FAILED"
+
+    wfc_running = False
 
 
 # --- Main Loop ---
