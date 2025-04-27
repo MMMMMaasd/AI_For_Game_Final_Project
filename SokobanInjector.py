@@ -65,27 +65,31 @@ def inject_sokoban_puzzle(world, path_coords, size=5):
         return None
 
     random.shuffle(seeds)
+    
+    num_pairs = min(len(seeds) // 2, 3)  # Max 3 pairs for size 5 area
+    print(f"Creating {num_pairs} hole-stone pairs")
+    # Place pairs
+    for _ in range(num_pairs):
+        # Place hole
+        hole_tile = seeds.pop()
+        hole_id = random.choice(list(Config.TILE_BOULDER_SPOTS))
+        hole_tile.possibilities = [hole_id]
+        hole_tile.entropy = 0
+        print(f"Seeded hole at ({hole_tile.x}, {hole_tile.y})")
 
-    # 5a. Seed a hole (boulder spot) using one of your Tanibo hole IDs
-    hole_tile = seeds.pop()
-    hole_id   = random.choice(list(Config.TILE_BOULDER_SPOTS))
-    hole_tile.possibilities = [hole_id]
-    hole_tile.entropy       = 0
-    print(f"Seeded hole at ({hole_tile.x}, {hole_tile.y}) → tile {hole_id}")
+        # Place corresponding stone
+        stone_tile = seeds.pop()
+        stone_tile.possibilities = [Config.SOKOBAN_BOX_ID]
+        stone_tile.entropy = 0
+        print(f"Seeded stone at ({stone_tile.x}, {stone_tile.y})")
 
-    # 5b. Seed a box
-    box_tile = seeds.pop()
-    box_tile.possibilities = [Config.SOKOBAN_BOX_ID]
-    box_tile.entropy       = 0
-    print(f"Seeded Box at ({box_tile.x}, {box_tile.y})")
-
-    # 6. Run local WFC on only the Sokoban area
-    print("Running local Sokoban‐area WFC…")
+    # Run WFC
     world.runWFC(
         adjacency_rules=Config.adjacency_rules_sokoban,
         weights=Config.tile_weights_sokoban,
         region=region_coords
     )
+
     print("Sokoban WFC complete.")
 
     return region_coords

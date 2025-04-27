@@ -1,10 +1,12 @@
 # ClassTile.py
 import random
-import Config # Import the central config
+from Config import * # Import the central config
 
 class Tile:
     """Represents a single tile in the WFC grid."""
     def __init__(self, x, y):
+        self.is_right_boundary = False
+        self.is_left_boundary = False
         self.x = x
         self.y = y
         # Initial possibilities depend on the phase, set by ClassWorld or SokobanInjector
@@ -38,6 +40,7 @@ class Tile:
             weights_dict (dict): A dictionary mapping tile IDs to their weights
                                  for the current WFC phase.
         """
+        """
         if not self.possibilities:
             print(f"ERROR: Attempting to collapse tile ({self.x}, {self.y}) with no possibilities!")
             self.entropy = 0 # Mark as collapsed (though invalidly)
@@ -61,6 +64,10 @@ class Tile:
             self.possibilities = random.choices(valid_possibilities, weights=weights, k=1)
 
         self.entropy = 0 # Mark as collapsed
+        """
+        weights = [weights_dict[possibility] for possibility in self.possibilities]
+        self.possibilities = random.choices(self.possibilities, weights=weights, k=1)
+        self.entropy = 0
 
     def constrain(self, neighbourPossibilities, direction, adjacency_rules):
         """
@@ -75,6 +82,47 @@ class Tile:
             bool: True if possibilities were reduced, False otherwise.
         """
         reduced = False
+        if self.entropy > 0:
+            # ✅ First, determine the opposite direction
+            if direction == NORTH:
+                opposite = SOUTH
+            elif direction == EAST:
+                opposite = WEST
+            elif direction == SOUTH:
+                opposite = NORTH
+            elif direction == WEST:
+                opposite = EAST
+            else:
+                raise ValueError(f"Invalid direction: {direction}")
+            if hasattr(self, 'is_boundary'):
+                if self.is_left_boundary:
+                    self.possibilities = [
+                        p for p in self.possibilities
+                        if p not in INNER_BOUNDARIES_LEFT_RESTRICT
+                    ]
+                elif self.is_right_boundary:
+                    self.possibilities = [
+                        p for p in self.possibilities
+                        if p not in INNER_BOUNDARIES_RIGHT_RESTRICT
+                    ]
+                self.entropy = len(self.possibilities)
+                if self.entropy == 0:
+                    return False
+            # ✅ Collect all valid connectors from neighbor possibilities
+            connectors = set()
+            for neighbourPossibility in neighbourPossibilities:
+                connectors |= adjacency_rules[neighbourPossibility][direction]
+
+            # ✅ Remove any invalid possibilities
+            for possibility in self.possibilities.copy():
+                if possibility not in connectors:
+                    self.possibilities.remove(possibility)
+                    reduced = True
+
+            self.entropy = len(self.possibilities)
+
+        return reduced
+        """
         if self.entropy == 0: # Already collapsed
             return False
 
@@ -107,4 +155,4 @@ class Tile:
             reduced = True # It was reduced (to zero)
 
         return reduced
-
+    """

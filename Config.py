@@ -64,7 +64,7 @@ TILE_TREE_RIGHT_MID                 = 650
 TILE_TREE_LEFT_BOTTOM               = 654
 TILE_TREE_RIGHT_BOTTOM              = 655
 TILE_TREE_LEFT_BOTTOM2              = 656
-TILE_TREE_MID_BOTTOM_OTHER_TREE     = 657
+TILE_TREE_CONNECTOR                 = 657
 TILE_TREE_RIGHT_BOTTOM2             = 658
 TILE_TREE_MID_MID2                  = 662
 TILE_TREE_LEFT_MID2                 = 664
@@ -89,6 +89,95 @@ TILE_BOULDER_SPOTS = {719, 727}
 FOREST_TILE_IDS    = {}
 FOREST_FLOOR_TILES = set()
 FOREST_WALL_TILES  = set()
+
+TREES = {
+    TILE_TREE_TOP_TOP_WALL,
+    TILE_TREE_TOP_TOP_TALL_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_RIGHT,
+    TILE_TREE_TOP_TOP_GRASS,
+    TILE_TREE_CONNECTOR,
+    TILE_TREE_MID_MID,
+    TILE_TREE_MID_MID3,
+    TILE_TREE_LEFT_MID2,
+    TILE_TREE_RIGHT_MID2,
+    TILE_TREE_MID_BOTTOM,
+    TILE_TREE_MID_BOTTOM_TO_GROUND
+    
+}
+
+TREE_TOP_MIDS = {
+    TILE_TREE_TOP_TOP_WALL,
+    TILE_TREE_TOP_TOP_TALL_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_RIGHT,
+    TILE_TREE_TOP_TOP_GRASS,
+    TILE_TREE_CONNECTOR
+}
+
+
+TREE_MIDS_MIDS = {
+    TILE_TREE_MID_MID,
+    TILE_TREE_MID_MID3
+}
+
+TREE_LEFT_MIDS = {TILE_TREE_LEFT_MID2}
+TREE_RIGHT_MIDS = {TILE_TREE_RIGHT_MID2}
+
+TREE_BOTTOMS_MIDS = {
+    TILE_TREE_MID_BOTTOM,
+    TILE_TREE_CONNECTOR
+}
+
+TREE_BOTTOMS_TO_GROUND = {
+    TILE_TREE_MID_BOTTOM_TO_GROUND
+}
+
+INNER_BOUNDARIES_RIGHT_RESTRICT = {
+    TILE_TREE_TOP_TOP_WALL,
+    TILE_TREE_TOP_TOP_TALL_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_RIGHT,
+    TILE_TREE_TOP_TOP_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_MID_MID,
+    TILE_TREE_RIGHT_MID,
+    TILE_TREE_RIGHT_BOTTOM,
+    TILE_TREE_CONNECTOR,
+    TILE_TREE_RIGHT_BOTTOM2,
+    TILE_TREE_MID_MID2,
+    TILE_TREE_MID_MID3,
+    TILE_TREE_RIGHT_MID2,
+    TILE_TREE_MID_BOTTOM,
+    TILE_TREE_RIGHT_BOTTOM,
+    TILE_TREE_MID_BOTTOM_TO_GROUND,
+    TILE_TREE_RIGHT_BOTTOM_TO_GROUND
+}
+
+INNER_BOUNDARIES_LEFT_RESTRICT = {
+    TILE_TREE_TOP_TOP_WALL,
+    TILE_TREE_TOP_TOP_TALL_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_RIGHT,
+    TILE_TREE_TOP_TOP_GRASS,
+    TILE_TREE_TOP_TOP_LIGHT_GROUND_MID,
+    TILE_TREE_LEFT_MID,
+    TILE_TREE_MID_MID,
+    TILE_TREE_LEFT_BOTTOM,
+    TILE_TREE_LEFT_BOTTOM2,
+    TILE_TREE_CONNECTOR,
+    TILE_TREE_MID_MID2,
+    TILE_TREE_LEFT_MID2,
+    TILE_TREE_MID_MID3,
+    TILE_TREE_LEFT_BOTTOM3,
+    TILE_TREE_LEFT_BOTTOM4,
+    TILE_TREE_MID_BOTTOM,
+    TILE_TREE_LEFT_BOTTOM_TO_GROUND,
+    TILE_TREE_MID_BOTTOM_TO_GROUND,
+    TILE_FENCE_MID,
+    TILE_FENCE_MID2
+}
+
 
 try:
     img  = Image.open(SPRITESHEET_PATH)
@@ -163,7 +252,28 @@ def _build_adjacency_from_map():
                 if err < be:
                     best,be = tid,err
             grid[r,c] = best
+    
+    wfc_input_array = grid.tolist()
+    from collections import defaultdict
+    adjacency_rules = defaultdict(lambda: defaultdict(set))
 
+    rows = len(wfc_input_array)
+    cols = len(wfc_input_array[0])
+
+    for y in range(rows):
+        for x in range(cols):
+            center = wfc_input_array[y][x]
+
+            if y > 0:
+                adjacency_rules[center][NORTH].add(wfc_input_array[y - 1][x])
+            if x < cols - 1:
+                adjacency_rules[center][EAST].add(wfc_input_array[y][x + 1])
+            if y < rows - 1:
+                adjacency_rules[center][SOUTH].add(wfc_input_array[y + 1][x])
+            if x > 0:
+                adjacency_rules[center][WEST].add(wfc_input_array[y][x - 1])
+    
+    """
     # build adjacency rules N/E/S/W
     adj = defaultdict(lambda: defaultdict(set))
     deltas = [(-1,0), (0,1), (1,0), (0,-1)]
@@ -174,12 +284,54 @@ def _build_adjacency_from_map():
                 nr,nc = r+dr, c+dc
                 if 0 <= nr < rows_map and 0 <= nc < cols_map:
                     adj[me][d].add(int(grid[nr,nc]))
-    return adj
+    """
+    return adjacency_rules
 
 adjacency_rules_forest = _build_adjacency_from_map()
 
+"""
+def _enhance_tree_rules(adjacency_rules):
+    
+    for tid in (TREE_MIDS_MIDS):
+        for d in DIRECTIONS:
+            adjacency_rules[tid][d] = set()
+    
+    for tid in TREE_TOP_MIDS:
+        adjacency_rules[tid][SOUTH] = set(TREE_MIDS_MIDS)
+    
+    # Tree mids must have tree tops above OR other mids below
+    for tid in TREE_MIDS_MIDS:
+        adjacency_rules[tid][NORTH] = set(TREE_TOP_MIDS)
+        adjacency_rules[tid][WEST] = set(TREE_LEFT_MIDS)
+        adjacency_rules[tid][EAST] = set(TREE_RIGHT_MIDS)
+        adjacency_rules[tid][SOUTH] = set(TREE_BOTTOMS_MIDS)
+        
+    for tid in TREE_LEFT_MIDS:
+        adjacency_rules[tid][EAST] = set(TREE_MIDS_MIDS)
+    
+    for tid in TREE_RIGHT_MIDS:
+        adjacency_rules[tid][WEST] = set(TREE_MIDS_MIDS)
+    
+    ground_top = set()
+    ground_top.add(TILE_TREE_MID_BOTTOM)
+    
+
+        
+    adjacency_rules[TILE_TREE_MID_BOTTOM][SOUTH] = set(TREE_BOTTOMS_TO_GROUND)
+    adjacency_rules[TILE_TREE_MID_BOTTOM_TO_GROUND][NORTH] = set()
+    adjacency_rules[TILE_TREE_MID_BOTTOM_TO_GROUND][NORTH] = ground_top
+    adjacency_rules[TILE_TREE_CONNECTOR][SOUTH] = set(TREE_MIDS_MIDS)
+    
+    
+    
+    return adjacency_rules
+"""
+#adjacency_rules_forest = _enhance_tree_rules(adjacency_rules_forest)
 # uniform positive weights (no zero‐weight collapse errors)
 tile_weights_forest = { tid:1 for tid in FOREST_DOMAIN }
+
+for id in TREES:
+    tile_weights_forest[id] = 20
 
 # ----------------------------------------------------------------------------
 # Phase 2 → Sokoban injection definitions

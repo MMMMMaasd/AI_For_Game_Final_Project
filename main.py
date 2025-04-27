@@ -49,6 +49,36 @@ def initialize_world_for_forest_wfc():
     current_phase = "FOREST_READY"
     wfc_running = False
 
+def set_tree_boundary_rules(world, solution_path):
+    path_set = {(r, c) for (r, c) in solution_path}
+    
+    for r, c in solution_path:
+        # Check all 4-directional neighbors
+        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+            nr, nc = r + dr, c + dc
+            if (0 <= nr < world.rows and 0 <= nc < world.cols and 
+                (nr, nc) not in path_set):
+                
+                t = world.get_tile(nc, nr)
+                if t and not t.is_path:
+                    # Mark left boundaries (tiles to the west of path)
+                    if dc == -1:  # West neighbor
+                        t.is_left_boundary = True
+                        t.possibilities = [
+                            p for p in t.possibilities
+                            if p not in Config.INNER_BOUNDARIES_LEFT_RESTRICT
+                        ]
+                    # Mark right boundaries (tiles to the east of path)
+                    elif dc == 1:  # East neighbor
+                        t.is_right_boundary = True
+                        t.possibilities = [
+                            p for p in t.possibilities
+                            if p not in Config.INNER_BOUNDARIES_RIGHT_RESTRICT
+                        ]
+                    
+                    t.entropy = len(t.possibilities)
+                    t.is_boundary = True  # General boundary marker
+
 def run_forest_wfc():
     """
     Phase 1:
@@ -77,13 +107,14 @@ def run_forest_wfc():
         t.possibilities = [Config.TILE_GRASS]
         t.entropy       = 0
         t.is_path       = True
+    set_tree_boundary_rules(world, solution_path)
 
     # 3) prepare region = all coords not on the path
     region = [(c, r)
               for r in range(world.rows)
               for c in range(world.cols)
               if (r, c) not in solution_path]
-
+    
     # 4) retry WFC until no contradictions
     attempt = 0
     while True:
@@ -109,11 +140,24 @@ def run_forest_wfc():
             break
 
         # reset non-path tiles back to full domain
-        print(" Resetting region and retrying WFC…")
+        print("Resetting region and retrying WFC...")
         for (c, r) in region:
             t = world.get_tile(c, r)
-            t.possibilities = list(Config.FOREST_DOMAIN)
-            t.entropy       = len(t.possibilities)
+            if not hasattr(t, 'is_boundary'):
+                t.possibilities = list(Config.FOREST_DOMAIN)
+                t.entropy = len(t.possibilities)
+            elif t.is_left_boundary:
+                t.possibilities = [
+                    p for p in Config.FOREST_DOMAIN
+                    if p not in Config.INNER_BOUNDARIES_LEFT_RESTRICT
+                ]
+                t.entropy = len(t.possibilities)
+            elif t.is_right_boundary:
+                t.possibilities = [
+                    p for p in Config.FOREST_DOMAIN
+                    if p not in Config.INNER_BOUNDARIES_RIGHT_RESTRICT
+                ]
+                t.entropy = len(t.possibilities)
 
     wfc_running = False
     current_phase = "SOKO_READY"
