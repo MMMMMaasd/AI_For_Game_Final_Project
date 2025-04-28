@@ -6,7 +6,7 @@ import Config                      # your updated Config.py
 from ClassWorld       import World
 from ClassDrawWorld   import DrawWorld
 from MazeGenerator    import generate_maze_and_path
-from SokobanInjector  import inject_sokoban_puzzle
+from SokobanInjector  import *
 from agent_before_phase2 import agent_runner
 
 
@@ -178,9 +178,19 @@ def run_sokoban_injection():
     print("\n--- Phase 2: Injecting Sokoban Puzzle ---")
     current_phase = "SOKO_RUNNING"
     wfc_running = True
+    
+    attempts = 0
+    max_attempts = 10
+    while attempts < 1:
+        attempts += 1
+        sokoban_region = inject_sokoban_puzzle(world, solution_path, size=7)
+        if sokoban_region:
+            solvable_region = validate_and_make_solvable(world, sokoban_region)
+            if solvable_region:
+                print(f"Created solvable puzzle in attempt {attempts}")
 
-    sokoban_region = inject_sokoban_puzzle(world, solution_path, size=7)
     wfc_running = False
+
 
     if sokoban_region:
         print("Sokoban injection complete!")

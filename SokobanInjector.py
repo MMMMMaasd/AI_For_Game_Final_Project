@@ -1,5 +1,10 @@
 import random
 import Config
+from utils import *
+from typing import List, Tuple, Optional, Any
+from SokobanLevel import Node, SokobanLevel
+from generator import *
+from pathfinder import *
 
 def inject_sokoban_puzzle(world, path_coords, size=5, seeds=None):
     """
@@ -111,3 +116,96 @@ def inject_sokoban_puzzle(world, path_coords, size=5, seeds=None):
 
     print("Sokoban WFC complete.")
     return region_coords
+
+def world_to_sokoban_level(world, region_coords):
+    # Find all boxes and holes in the region
+    boxes = []
+    holes = []
+    for (c, r) in region_coords:
+        tile = world.get_tile(c, r)
+        if tile.entropy == 0:
+            if tile.possibilities[0] == Config.SOKOBAN_BOX_ID:
+                boxes.append((c, r))
+            elif tile.possibilities[0] in Config.TILE_BOULDER_SPOTS:
+                holes.append((c, r))
+    
+    # Create SokobanLevel with correct box count
+    level = SokobanLevel(world.cols, world.rows, len(boxes))
+    
+    # Clear default walls and set actual walls
+    for y in range(world.rows):
+        for x in range(world.cols):
+            tile = world.get_tile(x, y)
+            level.nodes[x][y].wall = False  # Clear default walls
+            if tile and tile.entropy == 0:
+                tid = tile.possibilities[0]
+                level.nodes[x][y].wall = (tid == Config.SOKOBAN_WALL_ID)
+    
+    # Add boxes and their target holes
+    for box, hole in zip(boxes, holes):
+        button = Button(hole[0], hole[1])
+        level.boxes.append(Box(box[0], box[1], button))
+        level.nodes[hole[0]][hole[1]].button = True
+    
+    # Set player start position (nearest floor to first box)
+    if boxes:
+        player_pos = find_nearest_floor(world, boxes[0][0], boxes[0][1])
+        level.setPlayerPos(player_pos[0], player_pos[1])
+    
+    return level
+
+def find_nearest_floor(world, start_x, start_y):
+    from collections import deque
+    
+    visited = set()
+    queue = deque([(start_x, start_y, [])])
+    
+    while queue:
+        x, y, path = queue.popleft()
+        
+        # Check if current tile is a valid floor
+        tile = world.get_tile(x, y)
+        if (tile and tile.entropy == 0 and
+            tile.possibilities[0] == Config.SOKOBAN_FLOOR_ID):
+            return (x, y)
+            
+        # Mark as visited
+        visited.add((x, y))
+        
+        # Check neighbors
+        for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
+            nx, ny = x + dx, y + dy
+            if (0 <= nx < world.cols and 0 <= ny < world.rows and
+                (nx, ny) not in visited):
+                queue.append((nx, ny, path + [(nx, ny)]))
+    
+    # Fallback: return the original position if no floor found
+    return (start_x, start_y)
+
+def validate_and_make_solvable(world, region_coords):
+    """Converts the puzzle to a SokobanLevel and runs generatePaths()"""
+    level = world_to_sokoban_level(world, region_coords)
+    generatePaths(level)
+    
+    if level.trash:
+        return None
+    
+    # Only modify tiles in the original region_coords
+    for (c, r) in region_coords:
+        tile = world.get_tile(c, r)
+        if level.nodes[c][r].wall:
+            tile.possibilities = [Config.SOKOBAN_WALL_ID]
+        else:
+            tile.possibilities = [Config.SOKOBAN_FLOOR_ID]
+        tile.entropy = 0
+    
+    return region_coords
+
+def get_push_position(box_pos, target_pos):
+    """Returns where player needs to stand to push box toward target."""
+    bx, by = box_pos
+    tx, ty = target_pos
+    if tx > bx: return (bx-1, by)  # Push right
+    if tx < bx: return (bx+1, by)  # Push left
+    if ty > by: return (bx, by-1)  # Push down
+    return (bx, by+1)             # Push up
