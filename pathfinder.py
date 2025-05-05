@@ -35,8 +35,9 @@ class Pathfinder:
                 self.checkNeighbor(current_node.x - 1, current_node.y, current_node, isBox)
                 self.checkNeighbor(current_node.x, current_node.y + 1, current_node, isBox)
                 self.checkNeighbor(current_node.x, current_node.y - 1, current_node, isBox)
-        print("no path found")
-        return self.sumPath(current_node)
+        # If no path found, return (None, high cost)
+        self.resetNodes()
+        return (None, WALL_COST * 1000)
     
     def sumPath(self, endNode):
         path = []
@@ -65,10 +66,12 @@ class Pathfinder:
                     thisNode.parent = parent
 
     
-    #calculate the cost of a position
     def nodeCost(self, x, y):
         if (check_boundaries(self.nodes, x, y)):
-            node = self.nodes[x][y];
+            node = self.nodes[x][y]
+            # Exit tile (5) should always be passable
+            if node.permanent:
+                return BOX_COST
             if (node.occupied):
                 return BOX_COST
             else:

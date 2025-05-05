@@ -6,6 +6,159 @@ from SokobanLevel import Node, SokobanLevel
 from generator import *
 from pathfinder import *
 
+def find_sokoban_regions(world, solution_path, min_size=5, max_size=12):
+    """
+    Find larger non-overlapping regions (8x8 or bigger) along the path
+    Parameters:
+    - min_size: Minimum dimension (8 for 8x8 regions)
+    - max_size: Maximum dimension to prevent overly large regions
+    """
+    regions = []
+    path_length = len(solution_path)
+    i = 0  # Start from beginning of path
+    
+    # Parameters - adjust based on desired region size
+    segment_length = 8  # Look at more path tiles for bigger regions
+    min_open_tiles = 10  # 8x8 = 64 minimum walkable tiles
+    
+    while i < path_length - segment_length:
+        segment = solution_path[i:i+segment_length]
+        
+        # Expand search area for larger regions
+        all_tiles = set()
+        for r, c in segment:
+            # Search 2 tiles in all directions (for 8x8 regions)
+            for dr in range(-2, 3):
+                for dc in range(-2, 3):
+                    nr, nc = r+dr, c+dc
+                    if 0 <= nr < world.rows and 0 <= nc < world.cols:
+                        all_tiles.add((nr, nc))
+        
+        # Calculate bounds
+        rows = [t[0] for t in all_tiles]
+        cols = [t[1] for t in all_tiles]
+        min_r, max_r = min(rows), max(rows)
+        min_c, max_c = min(cols), max(cols)
+        
+        # Skip if too small or too large
+        region_width = max_c - min_c
+        region_height = max_r - min_r
+        if (region_width < min_size-1 or region_height < min_size-1 or
+            region_width > max_size or region_height > max_size):
+            i += 1
+            continue
+        
+        # Collect tiles
+        open_tiles = []
+        boundaries = []
+        
+        for r in range(min_r, max_r+1):
+            for c in range(min_c, max_c+1):
+                tile = world.get_tile(c, r)
+                if tile.entropy == 0:
+                    if tile.possibilities[0] in Config.WALKABLE_TILES:
+                        open_tiles.append((r, c))
+                    else:
+                        boundaries.append((r, c))
+        
+        # If enough space, create region and skip ahead
+        if len(open_tiles) >= min_open_tiles:
+            # Check for overlap
+            overlaps = False
+            for existing in regions:
+                exist_min_r, exist_max_r, exist_min_c, exist_max_c = existing['bounds']
+                if not (max_r < exist_min_r or min_r > exist_max_r or
+                        max_c < exist_min_c or min_c > exist_max_c):
+                    overlaps = True
+                    break
+            
+            if not overlaps:
+                regions.append({
+                    'bounds': (min_r, max_r, min_c, max_c),
+                    'open_tiles': open_tiles,
+                    'boundaries': boundaries,
+                    'start_pos': segment[0],
+                    'end_pos': solution_path[min(i+segment_length, path_length-1)]
+                })
+                # Skip ahead by region width plus buffer
+                i += max(segment_length, (max_c - min_c) + 2)
+            else:
+                i += 1
+        else:
+            i += 1
+    
+    return regions
+
+def find_and_mark_sokoban_regions(world, solution_path):
+    """Mark walkable tiles red and boundary trees blue"""
+    regions = find_sokoban_regions(world, solution_path)
+    
+    # Clear old highlights
+    for y in range(world.rows):
+        for x in range(world.cols):
+            world.get_tile(x, y).highlight_color = None
+    
+    # Mark new regions
+    for region in regions:
+        # Mark walkable tiles red
+        for r, c in region['open_tiles']:
+            world.get_tile(c, r).highlight_color = (255, 0, 0)
+        
+        # Mark boundary trees blue
+        for r, c in region['boundaries']:
+            world.get_tile(c, r).highlight_color = (0, 0, 255)
+    
+    return regions
+
+def generate_sokoban_levels(world, regions):
+    sokoban_levels = []
+    
+    for region in regions:
+        min_r, max_r, min_c, max_c = region['bounds']
+        width = max_c - min_c + 1
+        height = max_r - min_r + 1
+        
+        # Convert boundaries to relative coordinates
+        rel_boundaries = [(r-min_r, c-min_c) for r,c in region['boundaries']]
+        
+        # Convert positions to relative coordinates
+        rel_start_pos = (
+            region['start_pos'][0] - min_r,
+            region['start_pos'][1] - min_c
+        )
+        rel_end_pos = (
+            region['end_pos'][0] - min_r,
+            region['end_pos'][1] - min_c
+        )
+        
+        # Calculate number of boxes (1 per ~25 walkable tiles)
+        num_boxes = max(2, len(region['open_tiles']) // 25)
+        
+        # Create Sokoban level
+        
+        sokoban_level = None
+        
+        while True:
+            sokoban_level = SokobanLevel(
+                width=width,
+                height=height,
+                num_boxes=num_boxes,
+                boundaries=rel_boundaries,
+                start_pos=rel_start_pos,  # Player starting position
+                end_pos=rel_end_pos       # Player exit position
+            )
+            generatePaths(sokoban_level)
+            print(sokoban_level.trash)
+            if not sokoban_level.trash:
+                print(sokoban_level.get_tile_grid())
+                break
+            
+        sokoban_levels.append(sokoban_level)
+    
+    print(sokoban_levels)
+    
+    return sokoban_levels
+    
 def inject_sokoban_puzzle(world, path_coords, size=5, seeds=None):
     """
     Injects a Sokoban puzzle onto the maze.

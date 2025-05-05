@@ -9,12 +9,14 @@ class Tile:
         self.is_left_boundary = False
         self.x = x
         self.y = y
+        self.highlight_color = None
         # Initial possibilities depend on the phase, set by ClassWorld or SokobanInjector
         self.possibilities = []
         self.entropy = 0
         self.neighbours = {} # Dict: direction -> Tile
         self.is_path = False # Flag for Phase 1 solution path
         self.is_sokoban_area = False # Flag for Phase 2 puzzle area
+        self.highlight_color = None
 
     def addNeighbour(self, direction, tile):
         """Adds a neighboring tile."""

@@ -27,6 +27,7 @@ solution_path  = None  # list of (row, col)
 sokoban_region = None  # list of (x, y)
 current_phase  = "INIT"  # INIT, FOREST_READY, FOREST_RUNNING, SOKO_READY, SOKO_RUNNING, DONE, FAILED
 wfc_running    = False
+soko_regions = None
 
 def initialize_world_for_forest_wfc():
     """Phase 0: fresh World, reset everything."""
@@ -160,7 +161,13 @@ def run_forest_wfc():
                     if p not in Config.INNER_BOUNDARIES_RIGHT_RESTRICT
                 ]
                 t.entropy = len(t.possibilities)
-
+    global soko_regions
+    print("Solution path")
+    print(solution_path)
+    soko_regions = find_sokoban_regions(world, solution_path)
+    print("Found Soko region:")
+    print(soko_regions)
+    generate_sokoban_levels(world, soko_regions)
     wfc_running = False
     current_phase = "SOKO_READY"
     print("Forest WFC complete without contradictions. Ready for Sokoban. Press [S].")
@@ -239,7 +246,8 @@ while running:
         draw_world.update(
             show_entropy      = False,
             highlight_path    = solution_path   if current_phase in ("SOKO_READY","SOKO_RUNNING","DONE") else None,
-            highlight_sokoban = sokoban_region  if current_phase in ("SOKO_RUNNING","DONE")       else None
+            highlight_sokoban = sokoban_region  if current_phase in ("SOKO_RUNNING","DONE")       else None,
+            highlight_regions=soko_regions if current_phase == "SOKO_READY" else None
         )
         draw_world.draw(screen)
     else:

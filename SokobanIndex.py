@@ -9,15 +9,26 @@ from pathfinder import *
 def randomLevel():
     levelNumber = 0
     inGame = False
-    newLevel()
+    newLevel(10, 10, 3)
 
 # generate a new level
 def newLevel(level_width, level_height, num_of_boxes):
-    currentLvl = SokobanLevel(level_width, level_height, num_of_boxes)
+    boundaries = []
+    for x in range(level_height):
+        boundaries.append((x, 0))  # Left wall
+        boundaries.append((x, level_width-1))  # Right wall
+    for y in range(level_width):
+        boundaries.append((0, y))  # Top wall
+        boundaries.append((level_height-1, y))  # Bottom wall
+    
+    # Define end position (center of the map)
+    end_pos = (8, 8)
+    currentLvl = SokobanLevel(level_width, level_height, num_of_boxes, boundaries, (1, 1), end_pos)
     #random_number = random.randint(-2, 5)
-    currentLvl.rip(8)
     # generate level
     generatePaths(currentLvl)
+    print(currentLvl.trash)
+    print(currentLvl.get_tile_grid())
     return (currentLvl.trash, currentLvl.get_tile_grid())
 
 def upscale_maze(maze, scale):
@@ -35,6 +46,7 @@ def upscale_maze(maze, scale):
 
     return upscaled
 
+randomLevel()
 
     # if the level is unsolvable, generate a new level
 

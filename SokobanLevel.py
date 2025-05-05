@@ -16,6 +16,7 @@ class Node:
         self.has_box = False  # box marker
         self.used = False  # optimization flag
         self.tile_id = 1  # default wall tile (matching your WFC system)
+        self.permanent = False
 
 class Box:
     def __init__(self, X, Y, button):
@@ -42,7 +43,7 @@ class Button:
         self.y = Y
 
 class SokobanLevel:
-    def __init__(self, width: int, height: int, num_boxes: int):
+    def __init__(self, width: int, height: int, num_boxes: int, boundaries: List[Tuple[int, int]] = None, start_pos: Tuple[int, int] = None, end_pos: Tuple[int, int] = None):
         self.width = width
         self.height = height
         self.targets = []
@@ -51,10 +52,26 @@ class SokobanLevel:
         self.solveCounter = num_boxes
         self.saved_position = []
         self.trash = False
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.boundaries = boundaries if boundaries else []
         
         self.nodes = [[Node(x, y) for y in range(width)] for x in range(height)]
 
+        # Initialize boundaries as permanent walls
+        for x, y in self.boundaries:
+            if 0 <= x < height and 0 <= y < width:
+                self.nodes[x][y].wall = True
+                self.nodes[x][y].tile_id = 1
+                self.nodes[x][y].permanent = True
         
+        if end_pos:
+            end_x, end_y = end_pos
+            if 0 <= end_x < height and 0 <= end_y < width:
+                self.nodes[end_x][end_y].wall = False
+                self.nodes[end_x][end_y].tile_id = 0
+                self.nodes[end_x][end_y].permanent = True
+                
         # Initialize grid (1=wall, 0=floor)
         self.defineAllowedSpots()
         self.place_objects(num_boxes)
@@ -89,7 +106,7 @@ class SokobanLevel:
             x, y = self.targets[0].x, self.targets[0].y
         else:
             x, y = pos
-        self.setPlayerPos(x, y)
+        self.setPlayerPos(self.start_pos[0], self.start_pos[1])
         self.playerstartX = self.playerX
         self.playerstartY = self.playerY
         # self.nodes[x][y].tile_id = 99  # Player tile ID
@@ -97,8 +114,9 @@ class SokobanLevel:
 
     # return a random unoccupied spot and remove the wall
     def randomSpot(self):
-        if self.allowedSpots:
-            node = random.choice(self.allowedSpots)
+        available_spots = [spot for spot in self.allowedSpots if not spot.permanent]
+        if available_spots:
+            node = random.choice(available_spots)
             self.allowedSpots.remove(node)
             node.wall = False
             node.tile_id = 0 #Floor tile id
@@ -150,6 +168,7 @@ class SokobanLevel:
 
         # Apply player (4)
         grid[self.playerX][self.playerY] = 4
+        grid[self.end_pos[0]][self.end_pos[1]] = 5
         return np.array(grid, dtype=int)
         
        # for row in self.nodes:

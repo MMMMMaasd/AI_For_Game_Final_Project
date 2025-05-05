@@ -35,8 +35,10 @@ class DrawWorld:
         self.COLOR_CONTRADICTION= (255,0,0)
         self.COLOR_PATH        = (255,255,0,100)
         self.COLOR_SOKO        = (0,0,255,60)
+        self.COLOR_REGION = (255, 0, 0, 128)
+        self.COLOR_BOUNDARY = (0, 0, 255, 160)
 
-    def update(self, show_entropy=False, highlight_path=None, highlight_sokoban=None):
+    def update(self, show_entropy=False, highlight_path=None, highlight_sokoban=None, highlight_regions=None):
         self.worldSurface.fill((0,0,0,0))
         lowest = float('inf')
         if show_entropy:
@@ -48,7 +50,29 @@ class DrawWorld:
 
         path_surf = pygame.Surface(self.worldSurface.get_size(), pygame.SRCALPHA)
         soko_surf = pygame.Surface(self.worldSurface.get_size(), pygame.SRCALPHA)
-
+        region_surf = pygame.Surface(self.worldSurface.get_size(), pygame.SRCALPHA)
+        boundary_surf = pygame.Surface(self.worldSurface.get_size(), pygame.SRCALPHA)
+        if highlight_regions:
+            for region in highlight_regions:
+                for r, c in region['open_tiles']:
+                    rect = pygame.Rect(
+                        c*Config.TILESIZE*Config.SCALETILE,
+                        r*Config.TILESIZE*Config.SCALETILE,
+                        Config.TILESIZE*Config.SCALETILE,
+                        Config.TILESIZE*Config.SCALETILE
+                    )
+                    pygame.draw.rect(region_surf, self.COLOR_REGION, rect)
+                
+                # Draw boundaries (blue)
+                for r, c in region['boundaries']:
+                    rect = pygame.Rect(
+                        c*Config.TILESIZE*Config.SCALETILE,
+                        r*Config.TILESIZE*Config.SCALETILE,
+                        Config.TILESIZE*Config.SCALETILE,
+                        Config.TILESIZE*Config.SCALETILE
+                    )
+                    pygame.draw.rect(boundary_surf, self.COLOR_BOUNDARY, rect)
+                        
         if highlight_path:
             for r,c in highlight_path:
                 rect = pygame.Rect(c*Config.TILESIZE*Config.SCALETILE,
@@ -106,6 +130,8 @@ class DrawWorld:
                 scaled = pygame.transform.scale(tile_img, (dest.width,dest.height))
                 self.worldSurface.blit(scaled, dest)
 
+        self.worldSurface.blit(region_surf, (0, 0))
+        self.worldSurface.blit(boundary_surf, (0,0))
         self.worldSurface.blit(path_surf, (0,0))
         self.worldSurface.blit(soko_surf, (0,0))
 

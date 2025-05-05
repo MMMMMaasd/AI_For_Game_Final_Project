@@ -23,9 +23,10 @@ def generatePaths(lvl):
 
         # remove all walls on the player's path
         for i in range(len(playerPath)):
-            playerPath[i].wall = False
-            if playerPath[i].occupied:
-                lvl.trash = True
+            if not playerPath[i].permanent:
+                playerPath[i].wall = False
+                if playerPath[i].occupied:
+                    lvl.trash = True
 
         # append the box into the solving direction
         thisbox = ghostBoxes[bestPath]
@@ -46,7 +47,8 @@ def generatePaths(lvl):
                     
         # remove all walls on the box's path
         for i in range(stop+1):
-            boxPath[i].wall = False
+            if not boxPath[i].permanent:
+                boxPath[i].wall = False
 
         # set new player and box positions
         lvl.nodes[thisbox.x][thisbox.y].occupied = False
@@ -69,6 +71,30 @@ def generatePaths(lvl):
     lvl.setPlayerPos(lvl.playerstartX, lvl.playerstartY)
     px = lvl.playerX
     py = lvl.playerY
+    if lvl.end_pos and not lvl.trash:
+        end_x, end_y = lvl.end_pos
+        neighbors = [
+            (end_x+1, end_y), (end_x-1, end_y),
+            (end_x, end_y+1), (end_x, end_y-1)
+        ]
+        # Count how many neighbors are walls
+        walled_neighbors = 0
+        for nx, ny in neighbors:
+            if 0 <= nx < lvl.height and 0 <= ny < lvl.width:
+                if lvl.nodes[nx][ny].wall:
+                    walled_neighbors += 1
+                else:
+                    break  # At least one open neighbor
+        # If all 4 neighbors are walls, the exit is blocked!
+        if walled_neighbors >= 4:
+            lvl.trash = True
+            return  # Exit early
+
+        # Proceed with pathfinding check
+        solver = Pathfinder(lvl, lvl.playerX, lvl.playerY, end_x, end_y)
+        path_to_end = solver.returnPath(False)
+        if not path_to_end[0] or path_to_end[1] >= WALL_COST:
+            lvl.trash = True
 
 
 def copyBoxes(lvl, used):
