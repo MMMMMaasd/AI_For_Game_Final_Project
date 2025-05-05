@@ -86,6 +86,16 @@ def draw_grid():
             elif value == 7:
                 # pygame.draw.rect(screen, (220, 20, 60), rect)    # 🎯 Red (Crimson)
                 pygame.draw.rect(screen, COLOR_FLOOR, rect)
+            elif value == 8:  # Region floor
+                pygame.draw.rect(screen, (200, 230, 255), rect)  # Light blue
+            elif value == 9:  # Region wall
+                pygame.draw.rect(screen, (100, 100, 150), rect)  # Dark blue
+            elif value == 10: # Region player start
+                pygame.draw.rect(screen, (50, 200, 50), rect)  # Bright green
+            elif value == 11:
+                pygame.draw.rect(screen, (200, 200, 200), rect)
+            elif value == 12:
+                pygame.draw.rect(screen, (50, 50, 1), rect)
 
             pygame.draw.rect(screen, COLOR_GRID_LINE, rect, 1)
 
@@ -155,6 +165,10 @@ while running:
                     wfc_world.addStoneTile(x, y, TILE_PLAYER)
                 if tile_grid[y,x] == 3: # 3 = holes
                     wfc_world.addStoneTile(x, y, TILE_GRASS_HOLE)
+                if tile_grid[y,x] == 11:
+                    wfc_world.addStoneTile(x, y, TILE_SOKO_BLOCKER)
+                if tile_grid[y, x] == 12:
+                    wfc_world.addStoneTile(x, y, TILE_GRASS)
         if wfc_world and wfc_drawer:
             if INTERACTIVE:
                 if not wfc_done:

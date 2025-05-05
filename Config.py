@@ -106,7 +106,7 @@ TILE_GRASS_HOLE = 901
 TILE_GRASS_STONE = 902
 
 TILE_GRASS_BLOCKER = 5
-
+TILE_SOKO_BLOCKER = 230
 
 # Defined the size of the WFC generated graph here
 WORLD_X = 20
@@ -176,7 +176,7 @@ tileSprites = assign_tile_sprite(unique_ids_set)
 tileWeights[TILE_PLAYER] = 1
 tileWeights[TILE_GRASS_HOLE] = 1
 tileWeights[TILE_GRASS_STONE] = 1
-
+tileWeights[TILE_SOKO_BLOCKER] = 1
 list2 = [TILE_TREE_LEFT_MID, TILE_TREE_MID_MID, TILE_TREE_RIGHT_MID, TILE_TREE_LEFT_BOTTOM, TILE_TREE_RIGHT_BOTTOM,
          TILE_TREE_RIGHT_BOTTOM, TILE_TREE_LEFT_BOTTOM2, TILE_TREE_MID_BOTTOM_OTHER_TREE, TILE_TREE_RIGHT_BOTTOM, 
          TILE_TREE_RIGHT_BOTTOM2, TILE_TREE_MID_MID3, TILE_TREE_LEFT_BOTTOM_TO_GROUND, TILE_TREE_MID_BOTTOM_TO_GROUND, 
@@ -255,6 +255,7 @@ for i in blocker_set_tiles:
     tileWeights[i] = 100000000000
 tileWeights[TILE_TREE_MID_BOTTOM_OTHER_TREE] = 100000000000
 
+tileWeights[TILE_ROAD_SIGN] = 1
 
 sorted_weights = dict(sorted(tileWeights.items(), key=lambda item: item[1], reverse=True))
 """ TILE_TREE_LEFT_MID = 648
@@ -293,17 +294,18 @@ for special_tile in [TILE_PLAYER]:
         for neighbor in allowed_neighbors:
             adjacency_rules[neighbor][dir].add(special_tile)
 
-for special_tile in [TILE_GRASS_HOLE, TILE_GRASS_STONE]:
+for special_tile in [TILE_GRASS_HOLE, TILE_GRASS_STONE, TILE_SOKO_BLOCKER]:
     for dir in [NORTH, EAST, SOUTH, WEST]:
         adjacency_rules[special_tile][dir] = set(solution_set_tiles2)
         for neighbor in allowed_neighbors:
             adjacency_rules[neighbor][dir].add(special_tile)
 
+
 """ for special_tile in [TILE_PLAYER, TILE_GRASS_HOLE, TILE_GRASS_STONE]:
     for dir in [NORTH, EAST, SOUTH, WEST]:
         adjacency_rules[special_tile][dir] -= set(list2) """
 
-for special_tile in [TILE_PLAYER, TILE_GRASS_HOLE, TILE_GRASS_STONE]:
+for special_tile in [TILE_PLAYER, TILE_GRASS_HOLE, TILE_GRASS_STONE, TILE_SOKO_BLOCKER]:
     for dir in [NORTH, EAST, SOUTH, WEST]:
          adjacency_rules[special_tile][dir].add(3)
          adjacency_rules[3][dir].add(special_tile)
@@ -319,7 +321,7 @@ for dir in [NORTH, EAST, SOUTH, WEST]:
 # Disallow collapsing into special tiles
 for tile_id, neighbors in adjacency_rules.items():
     for direction, allowed_set in neighbors.items():
-        allowed_set.difference_update({TILE_PLAYER, TILE_GRASS_HOLE, TILE_GRASS_STONE})
+        allowed_set.difference_update({TILE_PLAYER, TILE_GRASS_HOLE, TILE_GRASS_STONE, TILE_SOKO_BLOCKER})
         for neighbor in allowed_neighbors:
             adjacency_rules[neighbor][dir].add(special_tile)
 
