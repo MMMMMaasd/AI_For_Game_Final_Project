@@ -19,6 +19,8 @@ class MazeGenerator:
         self.box_to_hole = {}
         self.box_to_hole_paths = {}
         self.tile_grid = None  # 🎯 final WFC integer grid
+        self.puzzle_regions = []  # Stores (start_x, start_y, end_x, end_y, box_count)
+        self.solved_puzzles = set()
 
     def generate(self, max_distance=8):
         self.grid.fill(0)
@@ -73,6 +75,7 @@ class MazeGenerator:
         # Track used areas to prevent overlapping regions
         used_areas = []
         regions_found = 0
+        self.puzzle_regions = []
         
         def get_random_size_and_boxes():
             rand = random.random()
@@ -286,14 +289,16 @@ class MazeGenerator:
                                     self.grid[abs_x][abs_y] = 12
                                     print(abs_x, abs_y)
                                 elif tile == 4:  # Player
-                                    self.grid[abs_x][abs_y] = 5
+                                    self.grid[abs_x][abs_y] = 1
                                 elif tile == 3:  # Box
                                     self.grid[abs_x][abs_y] = 2
                                     self.box_positions.append((abs_x, abs_y))
                                 elif tile == 2:   # Hole
                                     self.grid[abs_x][abs_y] = 3
                                     self.hole_positions.append((abs_x, abs_y))
-                    
+                                    
+                        self.puzzle_regions.append((start_x, start_y, end_x, end_y, box_count))
+                        used_areas.append((start_x, start_y, end_x, end_y))
                         regions_found += 1
                         print(f"Generated valid region {regions_found} with {box_count} boxes at ({start_x},{start_y})-({end_x},{end_y})")
                         break  # Success - exit retry loop
@@ -399,7 +404,10 @@ class MazeGenerator:
                 pos = (x, y)
                 current_val = self.grid[x, y]
                 if current_val in [8, 9, 10, 11, 12, 2, 3, 5]:
-                    tile_grid[x, y] = current_val
+                    if current_val == 9:
+                        tile_grid[x, y] = 1
+                    else:
+                        tile_grid[x, y] = current_val
                     continue
                 if pos == self.start:
                     tile_grid[x, y] = 5

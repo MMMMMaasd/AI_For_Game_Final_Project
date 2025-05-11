@@ -91,6 +91,21 @@ class World:
     def addStoneTile(self, x, y, type_id):
         self.stone_tiles.append((x, y, type_id))
 
+    def setTile(self, x, y, tile_type):
+        """Force-set a specific tile type, bypassing normal WFC constraints"""
+        if 0 <= x < self.cols and 0 <= y < self.rows:
+            tile = self.tileRows[y][x]
+            tile.possibilities = [tile_type]
+            tile.entropy = 0
+            tile.collapsed = True
+        
+            # Propagate constraints to neighbors
+            directions = tile.getDirections()
+            for direction in directions:
+                neighbour = tile.getNeighbour(direction)
+                if neighbour and neighbour.entropy != 0:
+                    neighbour.constrain([tile_type], direction)
+
 
     def waveFunctionCollapse(self):
         # === Stone tiles phase: force collapsed tiles and propagate to neighbors ===

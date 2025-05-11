@@ -19,6 +19,7 @@ class DrawWorld:
         self.worldSurface = pygame.Surface(
             (WORLD_X * self.TILESIZE * self.SCALETILE, WORLD_Y * self.TILESIZE * self.SCALETILE)
         )
+        self.player_sprite_scaled = pygame.transform.scale_by(player_sprite, (self.SCALETILE, self.SCALETILE))
 
     def update(self):
         lowest_entropy = self.world.getLowestEntropy()
@@ -72,12 +73,23 @@ class DrawWorld:
                         tile_image.blit(self.hole_sprite, (0, 0))
                     elif tile_type == TILE_GRASS_STONE:
                         tile_image.blit(self.stone_sprite, (0, 0))
-                    elif tile_type in tileSprites:
+                    elif tile_type == TILE_BOX_ON_HOLE:
+                        # Draw hole first
+                        tile_image.blit(self.hole_sprite, (0, 0))
+                        # Then draw stone with slight offset for visibility
+                        stone_offset = (self.TILESIZE - self.stone_sprite.get_width()) // 2
+                        tile_image.blit(self.stone_sprite, (stone_offset, stone_offset))
+                    elif tile_type in tileSprites:  # Check if tile type exists in spritesheet
                         pos = tileSprites[tile_type]
-                        sprite = self.spritesheet.subsurface(
-                            pygame.Rect(pos[0], pos[1], self.TILESIZE, self.TILESIZE)
-                        )
-                        tile_image.blit(sprite, (0, 0))
+                        try:
+                            sprite = self.spritesheet.subsurface(
+                                pygame.Rect(pos[0], pos[1], self.TILESIZE, self.TILESIZE)
+                            )
+                            tile_image.blit(sprite, (0, 0))
+                        except ValueError:
+                            # Fallback if sprite is out of bounds
+                            print(f"Warning: Sprite for tile type {tile_type} not found in spritesheet")
+                            tile_image.fill((255, 0, 255))  # magenta for error
                     else:
                         # Unknown tile — fallback
                         tile_image.fill((255, 0, 255))  # magenta for error
@@ -85,6 +97,17 @@ class DrawWorld:
                 # Scale and blit to worldSurface
                 tile_image = pygame.transform.scale_by(tile_image, (self.SCALETILE, self.SCALETILE))
                 self.worldSurface.blit(tile_image, (x * self.TILESIZE * self.SCALETILE, y * self.TILESIZE * self.SCALETILE))
+            
 
-    def draw(self, displaySurface):
+    def draw(self, displaySurface, player_position = None):
         displaySurface.blit(self.worldSurface, (0, 0))
+        # Then draw the player if position is provided
+        if player_position:
+            x, y = player_position
+            player_rect = pygame.Rect(
+                x * self.TILESIZE * self.SCALETILE,
+                y * self.TILESIZE * self.SCALETILE,
+                self.TILESIZE * self.SCALETILE,
+                self.TILESIZE * self.SCALETILE
+            )
+            displaySurface.blit(self.player_sprite_scaled, player_rect)

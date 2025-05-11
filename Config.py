@@ -4,7 +4,8 @@ from map_parser import prepare_wfc_input
 SPRITESHEET_PATH = "./Pokemon_WFC_map_puzzle/tileset_forest.png"
 
 wfc_input_array, rows, cols, movable_ids, unique_ids_set = prepare_wfc_input("./Pokemon_WFC_map_puzzle/VERTANIA-WALD (1.0).map", None, None, True)
-
+print(f"movable_ids : {movable_ids}")
+print(f"wfc_input_array: {wfc_input_array}")
 # Tile Types For Forest Puzzle
 TILE_GRASS                 = 1
 TILE_ROAD_SIGN_SPECIAL     = 2
@@ -107,10 +108,11 @@ TILE_GRASS_STONE = 902
 
 TILE_GRASS_BLOCKER = 5
 TILE_SOKO_BLOCKER = 230
+TILE_BOX_ON_HOLE = 1000
 
 # Defined the size of the WFC generated graph here
-WORLD_X = 20
-WORLD_Y = 20
+WORLD_X = 25
+WORLD_Y = 25
 
 # Spritesheet tile size (original), and upscale factor
 # Pokemon ROM map png is 16 pixel per block
@@ -241,6 +243,8 @@ TILE_TREE_MID_BOTTOM_TO_GROUND,
 TILE_TREE_RIGHT_BOTTOM_TO_GROUND,
 TILE_ROAD_SIGN_SPECIAL,
 TILE_ROAD_SIGN }
+
+UNWALKABLE_TILES = {2, 3, 5, 230, 643, 649, 651, 653, 654, 655, 656, 657, 664, 665, 666, 672, 673, 674, 678, 679, 902}
 
 tileWeights[13] = 200
 """ tileWeights[665] = 100000
