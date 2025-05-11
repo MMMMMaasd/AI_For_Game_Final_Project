@@ -47,16 +47,17 @@ wfc_running   = False
 show_binary_view = False
 show_tag_view    = False
 
-# --- Player state (NEW) ---
+# --- Player state & Sokoban reset tracking ---
 player_pos = None  # (r,c)
 start_pos  = None
 end_pos    = None
+initial_box_positions = []  # remember where the agent put its boxes
 
 def initialize_world():
     """Phase 0: reset everything."""
     global world, draw_world, maze_grid, tile_id_mask, tag_grid, solution_path
     global binary_maze, tile_id_maze, wfc_running, show_binary_view, show_tag_view
-    global current_phase, player_pos, start_pos, end_pos
+    global current_phase, player_pos, start_pos, end_pos, initial_box_positions
 
     world = World(Config.WORLD_X, Config.WORLD_Y)
     world.tile_map = np.zeros((world.rows, world.cols), dtype=int)
@@ -77,6 +78,7 @@ def initialize_world():
 
     current_phase = "FOREST_READY"
     player_pos = start_pos = end_pos = None
+    initial_box_positions.clear()
     print("Initialized. Press [F] to carve maze & generate forest.")
 
 def set_tree_boundary_rules(path_coords):
@@ -146,13 +148,13 @@ def draw_tag_grid(surface, tag_grid):
             elif tg==5: color=(255,0,0)
             elif tg==6: color=(128,0,128)
             else:       color=(255,255,255)
-            rect=pygame.Rect(c*cw,r*ch,cw,ch)
-            pygame.draw.rect(surface,color,rect)
-            pygame.draw.rect(surface,(50,50,50),rect,1)
+            rect = pygame.Rect(c*cw, r*ch, cw, ch)
+            pygame.draw.rect(surface, color, rect)
+            pygame.draw.rect(surface, (50,50,50), rect, 1)
     if solution_path:
         for r,c in solution_path:
-            rect=pygame.Rect(c*cw,r*ch,cw,ch)
-            pygame.draw.rect(surface,(255,255,0),rect,2)
+            rect = pygame.Rect(c*cw, r*ch, cw, ch)
+            pygame.draw.rect(surface, (255,255,0), rect, 2)
 
 def sync_tile_map_with_world():
     """Force world.tile_map, cell.possibilities & tag_grid to agree."""
@@ -277,7 +279,7 @@ def refresh_tags_from_tilemap(tag_grid, tile_map):
 def run_sokoban_agent():
     """Phase 2: inject Sokoban, then restore the rest of forest."""
     global world, draw_world, tag_grid, solution_path, binary_maze, tile_id_maze
-    global current_phase, wfc_running, player_pos, start_pos, end_pos
+    global current_phase, wfc_running, player_pos, start_pos, end_pos, initial_box_positions
 
     if not prepare_puzzle_world:
         current_phase="FAILED"
@@ -317,6 +319,11 @@ def run_sokoban_agent():
         world.tile_map[ey,ex]=END_HILITE
         player_pos=start_pos
 
+        # record initial box positions
+        initial_box_positions.clear()
+        for br,bc in np.argwhere(tag_grid==3):
+            initial_box_positions.append((br,bc))
+
         print("\n=== TAG GRID AFTER SOKOBAN ===")
         for row in tag_grid:
             print(' '.join(str(v) for v in row))
@@ -332,7 +339,7 @@ def run_sokoban_agent():
         sync_tile_map_with_world()
 
         current_phase="DONE"
-        pygame.display.set_caption("Complete – Press [P] to Reset Player, Arrows to Move")
+        pygame.display.set_caption("Complete – Press [P] to Reset, Arrows to Move")
     else:
         print("Invalid world returned by agent.")
         current_phase="FAILED"
@@ -350,15 +357,30 @@ while running:
         # --- Player movement & reset (NEW) ---
         elif ev.type==pygame.KEYDOWN:
             if current_phase=="DONE":
-                # reset player
+                # Reset player AND boulders
                 if ev.key==pygame.K_p and start_pos:
-                    pr,pc = player_pos
-                    world.tile_map[pr,pc]=GRASS_ID
+                    # 1) clear old player, boxes, holes remain
+                    for r in range(world.rows):
+                        for c in range(world.cols):
+                            tg = tag_grid[r,c]
+                            if world.tile_map[r,c] in (BOX_ID, PLAYER_ID) or tg==3:
+                                world.tile_map[r,c] = GRASS_ID
+                                tag_grid[r,c] = 0
+                    # 2) re-place boxes
+                    for br,bc in initial_box_positions:
+                        world.tile_map[br,bc] = BOX_ID
+                        tag_grid[br,bc]       = 3
+                        cell = world.get_tile(bc, br)
+                        cell.possibilities   = [BOX_ID]
+                        cell.entropy         = 0
+                    # 3) re-place player & end
                     sr,sc = start_pos
-                    world.tile_map[sr,sc]=PLAYER_ID
-                    player_pos=start_pos
+                    world.tile_map[sr,sc] = PLAYER_ID
+                    er,ec = end_pos
+                    world.tile_map[er,ec] = END_HILITE
+                    player_pos = start_pos
 
-                # move / push
+                # Arrows: move / push
                 elif ev.key in (pygame.K_UP,pygame.K_DOWN,pygame.K_LEFT,pygame.K_RIGHT):
                     dr,dc = {
                         pygame.K_UP:    (-1,0),
@@ -376,25 +398,22 @@ while running:
                             if (0<=nnr<world.rows and 0<=nnc<world.cols
                                 and tag_grid[nnr,nnc] in (0,2,4)):
                                 pushing_into_hole = (tag_grid[nnr,nnc]==4)
-                                # move box in world
+                                # move box
                                 world.tile_map[nnr,nnc]=BOX_ID
                                 cell_new=world.get_tile(nnc,nnr)
-                                cell_new.possibilities=[BOX_ID]
-                                cell_new.entropy=0
-                                # only overwrite tag if not a hole
+                                cell_new.possibilities=[BOX_ID]; cell_new.entropy=0
                                 if not pushing_into_hole:
                                     tag_grid[nnr,nnc]=3
-                                # clear old box
+                                # clear old
                                 world.tile_map[nr,nc]=GRASS_ID
                                 cell_old=world.get_tile(nc,nr)
-                                cell_old.possibilities=[GRASS_ID]
-                                cell_old.entropy=0
+                                cell_old.possibilities=[GRASS_ID]; cell_old.entropy=0
                                 tag_grid[nr,nc]=0
                                 # move player
                                 world.tile_map[r,c]=GRASS_ID
                                 world.tile_map[nr,nc]=PLAYER_ID
                                 player_pos=(nr,nc)
-                        # walk into free/hole/path/start/end
+                        # walkable
                         elif tg in (0,2,4,5,6):
                             world.tile_map[r,c]=GRASS_ID
                             world.tile_map[nr,nc]=PLAYER_ID
@@ -409,17 +428,16 @@ while running:
                 run_sokoban_agent()
             elif ev.key==pygame.K_r and current_phase in ("DONE","FAILED"):
                 initialize_world()
-            elif ev.key==pygame.K_b and current_phase not in ("FOREST_RUNNING","SOKO_INJECTING"):
+            elif ev.key==pygame.K_b and not wfc_running:
                 show_binary_view = not show_binary_view
-                show_tag_view = False
-            elif ev.key==pygame.K_t and current_phase not in ("FOREST_RUNNING","SOKO_INJECTING"):
-                show_tag_view = not show_tag_view
+                show_tag_view    = False
+            elif ev.key==pygame.K_t and not wfc_running:
+                show_tag_view    = not show_tag_view
                 show_binary_view = False
 
-        elif ev.type==pygame.MOUSEBUTTONDOWN and current_phase not in ("FOREST_RUNNING","SOKO_INJECTING"):
+        elif ev.type==pygame.MOUSEBUTTONDOWN and not wfc_running:
             if ev.button==1 and world:
-                mx,my=ev.pos
-                tw=Config.TILESIZE*Config.SCALETILE
+                mx,my = ev.pos; tw=Config.TILESIZE*Config.SCALETILE
                 col=int(mx//tw); row=int(my//tw)
                 if 0<=col<world.cols and 0<=row<world.rows:
                     t=world.get_tile(col,row)
@@ -458,8 +476,8 @@ while running:
                 cw = Config.TILESIZE * Config.SCALETILE
                 cx = int(pc*cw + cw/2)
                 cy = int(pr*cw + cw/2)
-                r = int(cw*0.4)
-                pygame.draw.circle(screen,(0,0,255),(cx,cy),r)
+                rad = int(cw*0.4)
+                pygame.draw.circle(screen,(0,0,255),(cx,cy),rad)
     else:
         surf = status_font.render("Press F to start", True, (200,200,200))
         screen.blit(surf, surf.get_rect(center=(WINDOW_WIDTH/2, WINDOW_HEIGHT/2)))
@@ -467,18 +485,18 @@ while running:
     # Status & hints
     col = (255,0,0) if "FAILED" in current_phase else (200,200,200)
     status = f"Phase: {current_phase}{' (Running)' if wfc_running else ''}"
-    txt = status_font.render(status, True, col)
+    txt    = status_font.render(status, True, col)
     screen.blit(txt,(10,WINDOW_HEIGHT-30))
 
     hints = {
-        "FOREST_READY": "[F] Generate Forest",
-        "SOKO_READY":   "[S] Inject Sokoban | [B] Binary | [T] Tag",
-        "DONE":         "[Arrows] Move | [P] Reset Player | [B] Binary | [T] Tag",
-        "FAILED":       "[R] Restart",
+        "FOREST_READY":"[F] Generate Forest",
+        "SOKO_READY":  "[S] Inject Sokoban | [B] Binary | [T] Tag",
+        "DONE":        "[Arrows] Move | [P] Reset | [B] Binary | [T] Tag",
+        "FAILED":      "[R] Restart",
     }
     hint = hints.get(current_phase,"")
     surf = status_font.render(hint, True, (150,150,255))
-    screen.blit(surf, surf.get_rect(bottomright=(WINDOW_WIDTH-10, WINDOW_HEIGHT-10)))
+    screen.blit(surf, surf.get_rect(bottomright=(WINDOW_WIDTH-10,WINDOW_HEIGHT-10)))
 
     pygame.display.flip()
     clock.tick(30)
