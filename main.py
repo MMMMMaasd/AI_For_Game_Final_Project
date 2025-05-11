@@ -359,28 +359,36 @@ while running:
             if current_phase=="DONE":
                 # Reset player AND boulders
                 if ev.key==pygame.K_p and start_pos:
-                    # 1) clear old player, boxes, holes remain
+                    # 1) clear old player & boxes back to grass
                     for r in range(world.rows):
                         for c in range(world.cols):
-                            tg = tag_grid[r,c]
-                            if world.tile_map[r,c] in (BOX_ID, PLAYER_ID) or tg==3:
+                            if world.tile_map[r,c] in (BOX_ID, PLAYER_ID) or tag_grid[r,c]==3:
                                 world.tile_map[r,c] = GRASS_ID
                                 tag_grid[r,c] = 0
-                    # 2) re-place boxes
+                                cell = world.get_tile(c, r)
+                                cell.possibilities = [GRASS_ID]
+                                cell.entropy       = 0
+                    # 2) re-place boxes (locked)
                     for br,bc in initial_box_positions:
                         world.tile_map[br,bc] = BOX_ID
                         tag_grid[br,bc]       = 3
                         cell = world.get_tile(bc, br)
                         cell.possibilities   = [BOX_ID]
                         cell.entropy         = 0
-                    # 3) re-place player & end
+                    # 3) re-place player & end highlight
                     sr,sc = start_pos
                     world.tile_map[sr,sc] = PLAYER_ID
+                    cell = world.get_tile(sc, sr)
+                    cell.possibilities = [PLAYER_ID]
+                    cell.entropy       = 0
                     er,ec = end_pos
                     world.tile_map[er,ec] = END_HILITE
+                    cell = world.get_tile(ec, er)
+                    cell.possibilities = [END_HILITE]
+                    cell.entropy       = 0
                     player_pos = start_pos
 
-                # Arrows: move / push
+                # Arrow keys: move / push
                 elif ev.key in (pygame.K_UP,pygame.K_DOWN,pygame.K_LEFT,pygame.K_RIGHT):
                     dr,dc = {
                         pygame.K_UP:    (-1,0),
@@ -402,9 +410,10 @@ while running:
                                 world.tile_map[nnr,nnc]=BOX_ID
                                 cell_new=world.get_tile(nnc,nnr)
                                 cell_new.possibilities=[BOX_ID]; cell_new.entropy=0
+                                # only tag=3 if not hole
                                 if not pushing_into_hole:
                                     tag_grid[nnr,nnc]=3
-                                # clear old
+                                # clear old box
                                 world.tile_map[nr,nc]=GRASS_ID
                                 cell_old=world.get_tile(nc,nr)
                                 cell_old.possibilities=[GRASS_ID]; cell_old.entropy=0
@@ -494,8 +503,7 @@ while running:
         "DONE":        "[Arrows] Move | [P] Reset | [B] Binary | [T] Tag",
         "FAILED":      "[R] Restart",
     }
-    hint = hints.get(current_phase,"")
-    surf = status_font.render(hint, True, (150,150,255))
+    surf = status_font.render(hints.get(current_phase,""), True, (150,150,255))
     screen.blit(surf, surf.get_rect(bottomright=(WINDOW_WIDTH-10,WINDOW_HEIGHT-10)))
 
     pygame.display.flip()
