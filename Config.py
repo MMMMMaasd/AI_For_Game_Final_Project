@@ -14,6 +14,8 @@ MAP_PATH                = os.path.join(ASSET_DIR, "VERTANIA-WALD (1.0).jpg")
 PLAYER_SPRITE_PATH      = os.path.join(ASSET_DIR, "player_sprite.png")
 STONE_SPRITE_PATH       = os.path.join(ASSET_DIR, "stone(box)_sprite.png")
 
+
+
 # --- Grid & Display ---
 WORLD_X   = 30
 WORLD_Y   = 30
@@ -84,19 +86,21 @@ TILE_FENCE_MID2                     = 679
 
 # --- Extra bush for Sokoban walls ---
 SHORT_BUSH = 5
+PLAYER_ID   = 900          # <= NEW
+END_HILITE  = 901
 
 # --- User-Defined Blacklist + Original Building Blacklist ---
 USER_BLACKLIST = {
     6, 7, 24, 25,26, 32, 33, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
     52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
     70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-    88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,100,101,102,103,104,107,109,
-    113,116,118,119,120,128,130,135,136,137,141,142,143,145,166,168,169,172,173,174,176,177,180,184,185,189,190,191,
+    88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,100,101,102,103,104,107,108,109,
+    113,116,118,119,120,123,128,130,135,136,137,140,141,142,143,145,166,167,168,169,172,173,174,176,177,180,184,185,189,190,191,
     192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,221,227,228,229,
     231,232,233,256,257,260,261,264,265,268,312,313,314,315,316,320,321,322,323,324,328,329,330,
     331,332,333,336,337,338,339,340,341,342,344,345,346,347,348,349,350,351,
     376,377,378,379,380,381,382,383,384,385,386,387,388,389,390,392,393,394,
-    395,396,397,398,400,401,402,403,404,405, 406,407,408,409,410,411,412,415,419,420,
+    395,396,397,398,400,401,402,403,404,405, 406,407,408,409,410,411,412,313, 414,415,419,420,
     421,422,423,426,430,431,435,436,437,438,651,652,653,659,660,661,668,669,671, 683, 685
 }
 ORIGINAL_BUILDING_BLACKLIST = {68, 76, 77, 78, 94, 102, 439, 643, 659}
@@ -342,6 +346,12 @@ if os.path.exists(STONE_SPRITE_PATH):
 if TANIBO_HOLE_ID and TANIBO_HOLE_ID in TANIBO_IDS:
     cx, cy = TANIBO_IDS[TANIBO_HOLE_ID]
     tile_sprites[TANIBO_HOLE_ID] = ("tanibo", cx*TILESIZE, cy*TILESIZE)
+
+
+# --- Player & end-highlight sprites (NEW) ---
+if os.path.exists(PLAYER_SPRITE_PATH):
+    tile_sprites[PLAYER_ID]   = ("player", 0, 0)   # whole image 16×16
+tile_sprites[END_HILITE]     = ("forest", 0, 0)   # transparent overlay
 
 # --- Summary ---
 print(f"FOREST_DOMAIN: {len(FOREST_DOMAIN)} tiles")
