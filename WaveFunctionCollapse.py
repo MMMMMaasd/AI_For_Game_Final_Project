@@ -77,6 +77,7 @@ class Player:
         self.solved_puzzles = set()
         self.collected_candies = set()
         self.candy_positions = {}
+        self.steps = 0
         
         self.region_walkable_tiles = {}
         for i, (sx, sy, ex, ey, _) in enumerate(maze.puzzle_regions):
@@ -130,6 +131,7 @@ class Player:
         # Normal movement
         if self._can_move_to(new_x, new_y):
             self.position = (new_x, new_y)
+            self.steps += 1
             self._check_puzzle_region()
             return True
         return False
@@ -157,6 +159,7 @@ class Player:
         # Perform the push
         self._move_box(box_x, box_y, target_x, target_y)
         self.position = (box_x, box_y)  # Move player to box's previous position
+        self.steps += 1
         return True
     
     
@@ -230,17 +233,28 @@ def draw_candy_counter():
         return
         
     candy_font = pygame.font.SysFont('Arial', 24, bold=True)
-    counter_text = f"Candies: {len(player.collected_candies)}/{len(player.maze.puzzle_regions)}"
-    text_surface = candy_font.render(counter_text, True, (255, 255, 255))
+    
+    # Create two lines of text
+    candy_text = f"Candies: {len(player.collected_candies)}/{len(player.maze.puzzle_regions)}"
+    steps_text = f"Steps: {player.steps}"
+    
+    # Render both text surfaces
+    candy_surface = candy_font.render(candy_text, True, (255, 255, 255))
+    steps_surface = candy_font.render(steps_text, True, (255, 255, 255))
+    
+    # Calculate total height needed
+    total_height = candy_surface.get_height() + steps_surface.get_height() + 5
     
     # Draw a semi-transparent background
-    bg_rect = pygame.Rect(10, 10, text_surface.get_width() + 20, text_surface.get_height() + 10)
+    bg_width = max(candy_surface.get_width(), steps_surface.get_width()) + 20
+    bg_rect = pygame.Rect(10, 10, bg_width, total_height + 15)
     bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
     bg_surface.fill((0, 0, 0, 128))  # Semi-transparent black
     screen.blit(bg_surface, bg_rect)
     
     # Draw the text
-    screen.blit(text_surface, (20, 15))
+    screen.blit(candy_surface, (20, 15))
+    screen.blit(steps_surface, (20, 15 + candy_surface.get_height() + 5))
     
 def draw_victory_panel():
     # Create a semi-transparent overlay
@@ -251,13 +265,19 @@ def draw_victory_panel():
     # Draw victory text
     victory_font = pygame.font.SysFont('Arial', 48)
     victory_text = victory_font.render("Congratulations!", True, COLOR_VICTORY_TEXT)
-    text_rect = victory_text.get_rect(center=(width_px//2, height_px//2 - 50))
+    text_rect = victory_text.get_rect(center=(width_px//2, height_px//2 - 70))
     screen.blit(victory_text, text_rect)
+    
+    # Draw steps text
+    steps_font = pygame.font.SysFont('Arial', 36)
+    steps_text = steps_font.render(f"Total Steps: {player.steps}", True, COLOR_VICTORY_TEXT)
+    steps_rect = steps_text.get_rect(center=(width_px//2, height_px//2))
+    screen.blit(steps_text, steps_rect)
     
     # Draw instruction text
     instr_font = pygame.font.SysFont('Arial', 24)
     instr_text = instr_font.render("Press any key to continue", True, COLOR_VICTORY_TEXT)
-    instr_rect = instr_text.get_rect(center=(width_px//2, height_px//2 + 50))
+    instr_rect = instr_text.get_rect(center=(width_px//2, height_px//2 + 70))
     screen.blit(instr_text, instr_rect)
     
     pygame.display.flip()
