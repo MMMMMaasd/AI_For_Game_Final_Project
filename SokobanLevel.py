@@ -2,7 +2,9 @@ import random
 import numpy as np
 from collections import deque
 from SokobanLevelGenerator import *
+#from SokobanTester import *
 from generator import *
+from MapTester import *
 class MazeGenerator:
     def __init__(self, width, height, num_boxes=3, min_distance=None):
         self.width = width
@@ -229,6 +231,7 @@ class MazeGenerator:
                 player_pos = random.choice(candidate_positions[start_idx:end_idx])
                 # Mark this region
                 used_areas.append((start_x, start_y, end_x, end_y))
+                #sokoban_areas.append((start_x, start_y, end_x, end_y))
                 regions_found += 1
             
                 # Mark the region in the grid
@@ -270,7 +273,9 @@ class MazeGenerator:
                     
                         # Get the generated grid
                         sokoban_grid = sokoban_level.get_tile_grid()
+
                         print(sokoban_grid)
+
                         print(sokoban_level.trash)
                         # Process the generated grid
                         for x in range(sokoban_level.height):
@@ -295,6 +300,10 @@ class MazeGenerator:
                                     self.hole_positions.append((abs_x, abs_y))
                     
                         regions_found += 1
+                        sokoban_areas.append(sokoban_grid)
+                        sokoban_starts.append((start_x, start_y))
+                        sokoban_ends.append((end_x, end_y))
+                        sokoban_players.append(player_pos)
                         print(f"Generated valid region {regions_found} with {box_count} boxes at ({start_x},{start_y})-({end_x},{end_y})")
                         break  # Success - exit retry loop
                     

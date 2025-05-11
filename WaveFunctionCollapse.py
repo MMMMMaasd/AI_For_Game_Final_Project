@@ -4,6 +4,7 @@ from SokobanLevel import *
 from ClassWorld import World
 from ClassDrawWorld import DrawWorld
 from Config import *
+from MapTester import *
 
 # === Pygame Constants ===
 TILE_SIZE = 32
@@ -48,12 +49,13 @@ PLAYER_SPRITE_IMG = pygame.image.load("./player_sprite.png").convert_alpha()
 HOLE_SPRITE_IMG = pygame.image.load("./hole_grass.png").convert_alpha()
 STONE_SPRITE_IMG = pygame.image.load("./boulder_grass.png").convert_alpha()
 
-
 clock = pygame.time.Clock()
 
 # === Buttons ===
 button_maze = pygame.Rect(width_px // 4 - 80, grid_height * TILE_SIZE + 10, 160, 40)
 button_wfc = pygame.Rect(3 * width_px // 4 - 80, grid_height * TILE_SIZE + 10, 160, 40)
+button_solve = pygame.Rect(width_px // 2 - 80, grid_height * TILE_SIZE + 60, 160, 40)
+
 
 # === WFC Setup ===
 wfc_world = None
@@ -102,15 +104,19 @@ def draw_grid():
 def draw_buttons():
     pygame.draw.rect(screen, COLOR_BUTTON, button_maze)
     pygame.draw.rect(screen, COLOR_BUTTON, button_wfc)
+    pygame.draw.rect(screen, COLOR_BUTTON, button_solve)
 
     text_surface1 = font.render("Maze View", True, COLOR_BUTTON_TEXT)
     text_surface2 = font.render("Run WFC", True, COLOR_BUTTON_TEXT)
+    text_surface3 = font.render("A* Solve", True, COLOR_BUTTON_TEXT)
 
     text_rect1 = text_surface1.get_rect(center=button_maze.center)
     text_rect2 = text_surface2.get_rect(center=button_wfc.center)
+    text_rect3 = text_surface3.get_rect(center=button_solve.center)
 
     screen.blit(text_surface1, text_rect1)
     screen.blit(text_surface2, text_rect2)
+    screen.blit(text_surface3, text_rect3)
 
 # === Main loop ===
 running = True
@@ -124,6 +130,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if button_maze.collidepoint(event.pos):
                 # Regenerate Maze
+                sokoban_areas = []
                 maze.generate()
                 maze.tile_grid = decorate_maze(maze.tile_grid)
                 tile_grid = maze.tile_grid
@@ -132,6 +139,7 @@ while running:
                 wfc_drawer = None
                 current_mode = "Maze"
                 wfc_done = False
+
 
             if button_wfc.collidepoint(event.pos):
                 # Switch to WFC mode
@@ -147,6 +155,24 @@ while running:
                         if result == 0:
                             wfc_done = True
                     wfc_drawer.update()
+
+            if button_solve.collidepoint(event.pos):
+                if current_mode == "WFC" and wfc_done:
+                    search_input = []
+                    for row in wfc_world.tileRows:
+                        row_values = [int(tile.possibilities[0]) for tile in row]
+                        search_input.append(row_values)
+                    tile_grid_list = tile_grid.tolist()
+                    solved_map = solveMap(search_input, tile_grid_list, maze)
+                    #draw solution
+                    for i, row in enumerate(wfc_world.tileRows):
+                        for j, tile in enumerate(row):
+                            tile.possibilities = [solved_map[i][j]]
+                            tile.entropy = 0
+                            tile.collapsed = True
+                    wfc_drawer.update()
+
+
 
     # === Update screen ===
     screen.fill(COLOR_FLOOR)
@@ -175,10 +201,17 @@ while running:
                     result = wfc_world.waveFunctionCollapse()
                     if result == 0:
                         wfc_done = True
+                        print("\tTILES HERE: ")
+                        print(tile_grid)
+                        search_input = []
+                        """for row in wfc_world.tileRows:
+                            row_values = [int(tile.possibilities[0]) for tile in row]
+                            search_input.append(row_values)
+                        solveMap(search_input)"""
+
+
                 wfc_drawer.update()
             wfc_drawer.draw(screen)
-
     pygame.display.flip()
-
 pygame.quit()
 sys.exit()
