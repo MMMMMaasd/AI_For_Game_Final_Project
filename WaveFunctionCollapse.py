@@ -5,6 +5,7 @@ from ClassWorld import World
 from ClassDrawWorld import DrawWorld
 from Config import *
 from enum import Enum, auto
+import random
 
 class GameState(Enum):
     EXPLORATION = auto()
@@ -59,7 +60,7 @@ pygame.display.set_caption("Maze + WFC Visualizer")
 PLAYER_SPRITE_IMG = pygame.image.load("./player_sprite.png").convert_alpha()
 HOLE_SPRITE_IMG = pygame.image.load("./hole_grass.png").convert_alpha()
 STONE_SPRITE_IMG = pygame.image.load("./boulder_grass.png").convert_alpha()
-
+CANDY_SPRITE_IMG = pygame.image.load("./rare-candy.png").convert_alpha()
 
 clock = pygame.time.Clock()
 
@@ -74,7 +75,45 @@ class Player:
         self.world = world
         self.position = maze.start
         self.solved_puzzles = set()
+        self.collected_candies = set()
+        self.candy_positions = {}
         
+        self.region_walkable_tiles = {}
+        for i, (sx, sy, ex, ey, _) in enumerate(maze.puzzle_regions):
+            walkable = []
+            for y in range(sy, ey + 1):
+                for x in range(sx, ex + 1):
+                    if tile_grid[y, x] == 12:  # Walkable grass tile
+                        walkable.append((x, y))
+            self.region_walkable_tiles[i] = walkable
+    
+    def get_random_candy_position(self, region_index):
+        """Get a random walkable position within the region"""
+        walkable = self.region_walkable_tiles.get(region_index, [])
+        return random.choice(walkable) if walkable else None
+    
+    def _is_path(self, x, y):
+        """Check if a tile is walkable path"""
+        return self.world.getType(x, y) in {TILE_GRASS, TILE_GRASS_HOLE}
+    
+    def solve_puzzle(self, region_index):
+        self.solved_puzzles.add(region_index)
+        candy_pos = self.get_random_candy_position(region_index)
+        print(f"Solving puzzle {region_index}, candy pos: {candy_pos}")  # Debug
+        if candy_pos:
+            self.candy_positions[region_index] = candy_pos
+            print(f"Candy placed at {candy_pos} for region {region_index}")  # Debug
+    
+    def check_candy_collection(self):
+        x, y = self.position
+        for puzzle_index, (cx, cy) in self.candy_positions.items():
+            if (puzzle_index in self.solved_puzzles and
+                puzzle_index not in self.collected_candies and
+                x == cx and y == cy):
+                self.collected_candies.add(puzzle_index)
+                return True
+        return False
+            
     def move(self, dx, dy):
         new_x, new_y = self.position[0] + dx, self.position[1] + dy
         
@@ -154,18 +193,15 @@ class Player:
             if sx <= x <= ex and sy <= y <= ey and i not in self.solved_puzzles:
                 print(f"Entered puzzle region {i}")
                 # Here you'd activate puzzle mode
-                
-    def solve_puzzle(self, region_index):
-        self.solved_puzzles.add(region_index)
         
-    def puzzles_remaining(self):
-        return len(self.maze.puzzle_regions) - len(self.solved_puzzles)
+    def candies_remaining(self):
+        return len(self.maze.puzzle_regions) - len(self.collected_candies)
         
     def has_won(self):
-        # Must be at exit AND solved all puzzles
+    # Must be at exit AND collected all candies
         at_exit = self.position == self.maze.end
-        all_solved = len(self.solved_puzzles) == len(self.maze.puzzle_regions)
-        return at_exit and all_solved
+        all_candies = len(self.collected_candies) == len(self.maze.puzzle_regions)
+        return at_exit and all_candies
         
 # === WFC Setup ===
 wfc_world = None
@@ -173,6 +209,39 @@ wfc_drawer = None
 current_mode = "Maze"
 wfc_done = False
 
+def draw_candies():
+    if not player or not wfc_done:
+        return
+        
+    for puzzle_index, (cx, cy) in player.candy_positions.items():
+        if (puzzle_index in player.solved_puzzles and
+            puzzle_index not in player.collected_candies):
+            # Draw candy at its position
+            print("Draw Candy !!!!!!!")
+            print()
+            scaled_candy = pygame.transform.scale(CANDY_SPRITE_IMG,
+                                             (TILE_SIZE, TILE_SIZE))
+            screen.blit(scaled_candy,
+                       (cx * TILE_SIZE + TILE_SIZE//4,
+                        cy * TILE_SIZE + TILE_SIZE//4))
+                        
+def draw_candy_counter():
+    if not player or not wfc_done:
+        return
+        
+    candy_font = pygame.font.SysFont('Arial', 24, bold=True)
+    counter_text = f"Candies: {len(player.collected_candies)}/{len(player.maze.puzzle_regions)}"
+    text_surface = candy_font.render(counter_text, True, (255, 255, 255))
+    
+    # Draw a semi-transparent background
+    bg_rect = pygame.Rect(10, 10, text_surface.get_width() + 20, text_surface.get_height() + 10)
+    bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+    bg_surface.fill((0, 0, 0, 128))  # Semi-transparent black
+    screen.blit(bg_surface, bg_rect)
+    
+    # Draw the text
+    screen.blit(text_surface, (20, 15))
+    
 def draw_victory_panel():
     # Create a semi-transparent overlay
     overlay = pygame.Surface((width_px, height_px), pygame.SRCALPHA)
@@ -346,6 +415,7 @@ while running:
                     moved = player.move(0, 1)
                 if moved:
                     last_move_time = current_time
+                    player.check_candy_collection()
                     wfc_drawer.update()
                 
                 # Check if entered a puzzle region
@@ -408,6 +478,8 @@ while running:
                     wfc_world.addStoneTile(x, y, TILE_SOKO_BLOCKER)
                 if tile_grid[y, x] == 12:
                     wfc_world.addStoneTile(x, y, TILE_GRASS)
+                if tile_grid[y, x] == 10:
+                    wfc_world.addStoneTile(x, y, TILE_GRASS)
                     
         if wfc_world and wfc_drawer:
             if INTERACTIVE and not wfc_done:
@@ -417,20 +489,28 @@ while running:
             wfc_drawer.update()
             if wfc_done and player:
                 wfc_drawer.draw(screen, player.position)
+                draw_candies()
+                draw_candy_counter()
                 draw_end_marker()
                 # Show end position warnings if needed
                 if player.position == maze.end and not player.has_won():
-                    # Create a background rectangle for better text visibility
-                    warning_bg = pygame.Surface((width_px, 40), pygame.SRCALPHA)
-                    warning_bg.fill((0, 0, 0, 180))  # Semi-transparent black background
-                    screen.blit(warning_bg, (0, 40))  # Position it slightly below the top
+                    warning_bg = pygame.Surface((width_px, 60), pygame.SRCALPHA)
+                    warning_bg.fill((0, 0, 0, 180))
+                    screen.blit(warning_bg, (0, 40))
     
                     warning_font = pygame.font.SysFont('Arial', 24, bold=True)
-                    warning_text = warning_font.render(
-                        f"Solve {player.puzzles_remaining()} more puzzle(s) to win!",
-                        True,
-                        (255, 255, 255)  # White text for better contrast
-                    )
+                    if player.candies_remaining() > 0:
+                        warning_text = warning_font.render(
+                            f"Collect {player.candies_remaining()} more candy(s) to win!",
+                            True,
+                            (255, 255, 255)
+                        )
+                    else:
+                        warning_text = warning_font.render(
+                            "You have all candies! Return to the exit!",
+                            True,
+                            (255, 255, 255)
+                        )
                     screen.blit(warning_text, (width_px//2 - warning_text.get_width()//2, 50))
             else:
                 wfc_drawer.draw(screen)
