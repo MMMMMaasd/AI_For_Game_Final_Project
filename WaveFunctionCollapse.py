@@ -101,7 +101,7 @@ class Player:
     def solve_puzzle(self, region_index):
         self.solved_puzzles.add(region_index)
         candy_pos = self.get_random_candy_position(region_index)
-        self.score += 100
+        self.score += 80
         print(f"Solving puzzle {region_index}, candy pos: {candy_pos}")  # Debug
         if candy_pos:
             self.candy_positions[region_index] = candy_pos
