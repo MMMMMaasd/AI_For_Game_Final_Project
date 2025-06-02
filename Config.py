@@ -111,8 +111,8 @@ TILE_SOKO_BLOCKER = 230
 TILE_BOX_ON_HOLE = 1000
 
 # Defined the size of the WFC generated graph here
-WORLD_X = 25
-WORLD_Y = 25
+WORLD_X = 10
+WORLD_Y = 10
 
 # Spritesheet tile size (original), and upscale factor
 # Pokemon ROM map png is 16 pixel per block
