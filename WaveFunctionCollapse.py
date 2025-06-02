@@ -44,7 +44,7 @@ player = None
 current_puzzle_index = None
 
 # === Maze Setup ===
-maze = MazeGenerator(25, 25, num_boxes=5)
+maze = MazeGenerator(10, 10, num_boxes=5)
 maze.generate()
 maze.tile_grid = decorate_maze(maze.tile_grid)
 tile_grid = maze.tile_grid
@@ -201,10 +201,9 @@ class Player:
         return len(self.maze.puzzle_regions) - len(self.collected_candies)
         
     def has_won(self):
-    # Must be at exit AND collected all candies
+    # Must be at exit AND steps less than 20
         at_exit = self.position == self.maze.end
-        all_candies = len(self.collected_candies) == len(self.maze.puzzle_regions)
-        return at_exit and all_candies
+        return at_exit and self.steps < 20
         
 # === WFC Setup ===
 wfc_world = None
